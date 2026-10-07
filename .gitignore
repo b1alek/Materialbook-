@@ -14,3 +14,8 @@ local.properties
 /build/
 /app/build/
 *.apk
+*.jks
+*.keystore
+*token*
+*.txt
+keystore*
