@@ -34,7 +34,7 @@
   4. Tap **Add**. Obtainium will now fetch the latest APK and notify you whenever a new build is published!
 
 > [!NOTE]
-> **First-time Install Note**: If you previously had official `v1.0.0` from `eepiemi` installed, you must uninstall it first because the signing key is different. Subsequent updates from this fork will update seamlessly without data loss.
+> **Independent Package (`com.b1alek.materialbook`)**: This fork uses its own dedicated package ID (`com.b1alek.materialbook`), ensuring zero ID conflicts or duplicate warnings in Obtainium and allowing side-by-side installation with the upstream app. Future releases from this fork will update seamlessly.
 
 <h2 align="middle">
     ✏️ This fork (`b1alek/Materialbook-`):
