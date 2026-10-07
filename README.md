@@ -40,18 +40,15 @@
     ✏️ This fork (`b1alek/Materialbook-`):
 </h2>
 
+*  **WhatsApp & External Share URL Fix ([Issue #28](https://github.com/eepiemi/Materialbook/issues/28))**: Prevents double-percent-encoding of URLs when sharing Reels and posts directly to WhatsApp and external apps; adds unwrapping for mobile Facebook redirects (`lm.facebook.com`).
+*  **Polish (pl) Localization**: Complete translation of the user interface into Polish (`values-pl/strings.xml`).
+*  **Desktop Messenger Dark & AMOLED Mode**: Fixed Messenger interface staying white when desktop Messages mode is active; now fully styled with AMOLED Black / dark theme.
+*  **Enhanced Adblock**: Hides sponsored posts in both English ("Sponsored") and Polish ("Sponsorowane"), including shadow DOM and hidden element variants.
+*  **Local Offline Script Loading**: Removed remote GitHub script fetching in `fetchScripts.kt` in favor of local bundled resources for improved privacy, security, and offline reliability.
+*  **Decoupled Package ID (`com.b1alek.materialbook`)**: Eliminates Obtainium duplicate application collisions and allows side-by-side installation with upstream builds.
 *  **PR #43 Integrated**: Adds option to show the **Messages section in Desktop mode** while keeping the rest of the interface mobile-optimized.
-*  **Automated CI/CD**: Builds and signs latest commits via GitHub Actions into direct release APKs.
-
-
-*  Implements Material You theming for:
-    *  The facebook app itself
-    *  The app icon
-    *  The settings page
-    *  The "No internet" screen
-*  Fixes AMOLED Black
-*  Makes the splash screen and the "No internet" screen AMOLED Black
-*  Changes some minor things for aesthetics purposes
+*  **Automated CI/CD**: Builds and signs release APKs via GitHub Actions with a persistent keystore for seamless in-place updates.
+*  📖 **[Full Changelog](CHANGELOG.md)**: Detailed version history and release notes.
 
 <h2 align="middle">
     ⚙️ Features
