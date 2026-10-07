@@ -90,17 +90,27 @@ fun MaterialbookWebView(
             },
             isMessagesDesktopActive = { messagesDesktop },
             handleExternalUrl = { externalUrl ->
-            val intent = Intent(Intent.ACTION_VIEW, externalUrl.toUri())
-            runCatching {
-                context.startActivity(intent)
-            }.onFailure {
-                Toast.makeText(
-                    context,
-                    resources.getString(R.string.not_supported),
-                    Toast.LENGTH_SHORT
-                ).show()
+                val intent = if (externalUrl.startsWith("intent:", ignoreCase = true)) {
+                    runCatching {
+                        Intent.parseUri(externalUrl, Intent.URI_INTENT_SCHEME).apply {
+                            addCategory(Intent.CATEGORY_BROWSABLE)
+                            component = null
+                            selector = null
+                        }
+                    }.getOrNull() ?: Intent(Intent.ACTION_VIEW, externalUrl.toUri())
+                } else {
+                    Intent(Intent.ACTION_VIEW, externalUrl.toUri())
+                }
+                runCatching {
+                    context.startActivity(intent)
+                }.onFailure {
+                    Toast.makeText(
+                        context,
+                        resources.getString(R.string.not_supported),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }
         )
     )
 
