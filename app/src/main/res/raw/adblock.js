@@ -1,75 +1,5 @@
 (function() {
 
-    if (isDesktopMode()) {
-        (function() {
-          const selector = 'div.sponsored_ad, article[data-ft*="sponsored_ad"]';
-
-          const removeSponsored = (root = document) => {
-            root.querySelectorAll(selector).forEach(el => el.remove());
-          };
-
-          removeSponsored();
-
-          const observer = new MutationObserver(mutations => {
-            for (const mutation of mutations) {
-              for (const node of mutation.addedNodes) {
-                if (!(node instanceof HTMLElement)) continue;
-                if (node.matches(selector)) {
-                  node.remove();
-                } else {
-                  removeSponsored(node);
-                }
-              }
-            }
-          });
-          observer.observe(document.body, {
-            childList: true,
-            subtree: true
-          });
-        })();
-
-        return;
-    }
-
-    //  The Ad tag and separator + special icon elements have a unique color of #8a8d91 in both theme modes (we'll see if they fix this with time)
-
-    const processedAds = new WeakSet();
-
-    function removeFeedAds() {
-        const spans = document.querySelectorAll('span.f5[style*="color:#8a8d91"]:not([data-nosnippet])');
-
-        spans?.forEach(span => {
-            if (processedAds.has(span)) return;
-            processedAds.add(span);
-        })
-
-        for (const span of spans) {
-            const parent = span.parentElement;
-
-            if (!parent?.matches('div.native-text.rslh')) {
-                continue;
-            }
-
-            const container = parent.closest('div[data-dcm-id="1"][data-mcomponent="MContainer"]');
-            container.style.display = 'none'
-
-            const postSeparator = container.previousElementSibling;
-
-            if (postSeparator && postSeparator.offsetHeight === 1 && postSeparator.querySelector('[data-fd-action]') ) {
-              postSeparator.style.display = 'none';
-            }
-        }
-    }
-
-    const adsObserver = new MutationObserver(() => {
-        removeFeedAds();
-    }).observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-
-    removeFeedAds();
-
     const sponsoredTexts = [
         "Sponsored", "Ad", "Gesponsert", "Sponsorlu", "Sponsorowane",
         "Ispoonsara godhameera", "Geborg", "Bersponsor", "Ditaja",
@@ -82,49 +12,103 @@
         "Спонсорирано", "Спонзорирано", "Ивээн тэтгэсэн", "Реклама",
         "Спонзорисано", "במימון", "سپانسرڈ", "دارای پشتیبانی مالی",
         "ስፖንሰር የተደረገ", "प्रायोजित", "ተደረገ", "प", "স্পনসর্ড",
-        "ਪ੍ਰਯੋਜਿਤ", "પ્રાયોજિત", "ପ୍ରାୟୋଜିତ", "செய்யப்பட்ட செய்யப்பட்ட",
-        "చేయబడినది చేయబడినది", "ಪ್ರಾಯೋಜಿಸಲಾಗಿದೆ", "ചെയ്‌തത് ചെയ്‌തത്",
-        "ලද ලද ලද", "สนับสนุน สนับสนุน รับ สนับสนุน สนับสนุน",
-        "ကြော်ငြာ ကြော်ငြာ", "ឧបត្ថម្ភ ឧបត្ថម្ភ ឧបត្ថម្ភ", "광고",
-        "贊助", "赞助内容", "広告", "സ്‌പോൺസർ ചെയ്‌തത്",
-        "Anzeige","Peye","Oglas"
+        "ਪ੍ਰਯੋਜਿਤ", "પ્રાયોજિત", "ପ୍ରାୟୋଜିତ", "செய்யப்பட்ட",
+        "చేయబడినది", "ಪ್ರಾಯೋಜಿಸಲಾಗಿದೆ", "ചെയ്‌തത്",
+        "ලද", "สนับสนุน", "ကြော်ငြာ", "ឧបត្ថម្ភ", "광고",
+        "贊助", "赞助内容", "広告", "Anzeige", "Peye", "Oglas"
     ];
 
     function containsSponsoredText(text) {
-        const lowerText = text.toLowerCase();
+        if (!text) return false;
+        // Strip zero-width chars and normalize whitespace
+        const clean = text.replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase();
+        if (!clean) return false;
+
         return sponsoredTexts.some(word => {
             const lowerWord = word.toLowerCase();
-            // Use word boundary regex to match whole words only
-            const wordBoundaryRegex = new RegExp(`\\b${lowerWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
-            return wordBoundaryRegex.test(lowerText);
+            const wordBoundaryRegex = new RegExp(`(^|\\s|[.,·•])(${lowerWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})($|\\s|[.,·•])`, 'i');
+            return wordBoundaryRegex.test(clean);
         });
     }
 
+    const AD_LINK_SELECTOR = 'a[href*="/ads/about"], a[href*="facebook.com/ads/about"], a[href*="/ads/preferences"], a[href*="/ads/disclosure"], a[href*="sponsored_ad"]';
 
+    function isAdContainer(el) {
+        if (!el || !(el instanceof HTMLElement)) return false;
+
+        // 1. Mandatory ad transparency links
+        if (el.querySelector(AD_LINK_SELECTOR)) return true;
+
+        // 2. ARIA labels on element or children
+        const aria = el.getAttribute('aria-label');
+        if (aria && containsSponsoredText(aria)) return true;
+        const ariaAd = el.querySelector('[aria-label*="Sponsor" i], [aria-label*="Sponsored" i], [aria-label*="Sponsorowane" i], [aria-label*="Reklama" i]');
+        if (ariaAd) return true;
+
+        // 3. Known ad text elements (classes frequently used by Facebook mobile/desktop)
+        const candidates = el.querySelectorAll('span.f5, span.f2, div.native-text, div[role="button"] span, header span');
+        for (const c of candidates) {
+            const txt = c.textContent;
+            if (txt && containsSponsoredText(txt)) return true;
+            // Legacy inline color marker
+            if (c.matches('span.f5[style*="color:#8a8d91"]:not([data-nosnippet])')) return true;
+        }
+
+        return false;
+    }
+
+    // --- Feed Ads Removal ---
+    function removeFeedAds(root = document) {
+        const isDesktop = window.isDesktopMode && window.isDesktopMode();
+
+        if (isDesktop) {
+            const desktopSelectors = 'div[data-pagelet*="FeedUnit"], div[role="feed"] > div, div[role="article"], div.sponsored_ad, article[data-ft*="sponsored_ad"]';
+            const posts = root.querySelectorAll(desktopSelectors);
+            posts.forEach(post => {
+                if (post.dataset.adHidden === 'true') return;
+                if (post.matches('div.sponsored_ad, article[data-ft*="sponsored_ad"]') || isAdContainer(post)) {
+                    post.dataset.adHidden = 'true';
+                    post.style.display = 'none';
+                }
+            });
+            return;
+        }
+
+        // Mobile Feed Ads (m.facebook.com)
+        const mobilePosts = root.querySelectorAll('[data-tracking-duration-id], div[data-dcm-id="1"][data-mcomponent="MContainer"]');
+        mobilePosts.forEach(container => {
+            if (container.dataset.adHidden === 'true') return;
+
+            if (isAdContainer(container)) {
+                container.dataset.adHidden = 'true';
+                container.style.display = 'none';
+
+                // Hide separator/gap preceding the post
+                const postSeparator = container.previousElementSibling;
+                if (postSeparator && (postSeparator.offsetHeight <= 8 || postSeparator.querySelector('[data-fd-action]'))) {
+                    postSeparator.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    // Initial feed cleanup
+    removeFeedAds();
+
+    // --- Reel Ads Removal ---
     function removeReelAds(root = document) {
         const containers = root.querySelectorAll('div.vertically-snappable');
 
-        let hiddenCount = 0;
-        containers.forEach((container, index) => {
-            // Skip if already hidden
-            if (container.dataset.adHidden === 'true') {
-                return;
-            }
+        containers.forEach(container => {
+            if (container.dataset.adHidden === 'true') return;
 
             const spans = container.querySelectorAll('span');
-
             for (const span of spans) {
                 const text = span.textContent;
-
                 if (containsSponsoredText(text)) {
-
-                    // Mark as hidden to prevent re-processing
                     container.dataset.adHidden = 'true';
-
-                    // Completely empty the container but keep it in DOM for scroll snap
                     container.innerHTML = '';
 
-                    // Add a styled message for blocked ad
                     const messageDiv = document.createElement('div');
                     messageDiv.style.cssText = `
                         display: flex;
@@ -142,28 +126,15 @@
                     `;
 
                     const icon = document.createElement('div');
-                    icon.style.cssText = `
-                        font-size: 48px;
-                        margin-bottom: 16px;
-                        opacity: 0.6;
-                    `;
+                    icon.style.cssText = 'font-size: 48px; margin-bottom: 16px; opacity: 0.6;';
                     icon.textContent = '🚫';
 
                     const title = document.createElement('div');
-                    title.style.cssText = `
-                        font-size: 18px;
-                        font-weight: 600;
-                        margin-bottom: 8px;
-                        color: #888;
-                    `;
+                    title.style.cssText = 'font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #888;';
                     title.textContent = 'Ad Blocked';
 
                     const subtitle = document.createElement('div');
-                    subtitle.style.cssText = `
-                        font-size: 14px;
-                        color: #555;
-                        line-height: 1.4;
-                    `;
+                    subtitle.style.cssText = 'font-size: 14px; color: #555; line-height: 1.4;';
                     subtitle.textContent = 'Sponsored content was removed';
 
                     messageDiv.appendChild(icon);
@@ -171,83 +142,60 @@
                     messageDiv.appendChild(subtitle);
                     container.appendChild(messageDiv);
 
-                    // Make container non-interactive
                     container.style.pointerEvents = 'none';
                     container.style.userSelect = 'none';
 
-                    // Set up intersection observer to auto-scroll when this ad comes into view
                     setupAutoScroll(container);
-
-                    hiddenCount++;
                     break;
                 }
             }
         });
     }
 
-    // Auto-scroll past hidden ads when they come into view
     function setupAutoScroll(container) {
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-                    // Find next non-hidden reel (skip all consecutive hidden ads)
                     let nextReel = container.nextElementSibling;
-                    let skippedCount = 0;
-
                     while (nextReel && nextReel.dataset.adHidden === 'true') {
                         nextReel = nextReel.nextElementSibling;
-                        skippedCount++;
                     }
 
                     if (nextReel) {
-                        // Use a more aggressive scroll approach
                         setTimeout(() => {
-                            // Scroll with center alignment for better distance
                             nextReel.scrollIntoView({
                                 behavior: 'smooth',
                                 block: 'center',
                                 inline: 'nearest'
                             });
-
-                            // Additional scroll push after a short delay to ensure we're past the ad
                             setTimeout(() => {
-                                window.scrollBy({
-                                    top: 100,
-                                    behavior: 'smooth'
-                                });
+                                window.scrollBy({ top: 100, behavior: 'smooth' });
                             }, 200);
                         }, 100);
                     }
-
-                    // Unobserve after scrolling once
                     observer.unobserve(container);
                 }
             });
-        }, {
-            threshold: 0.5 // Trigger when 50% of the ad is visible
-        });
+        }, { threshold: 0.5 });
 
         observer.observe(container);
     }
 
-    // Initial cleanup
     removeReelAds();
 
-    // Watch for dynamically added reel ads
-    const reelObserver = new MutationObserver(mutations => {
+    // Unified observer for feed & reel ads
+    const observer = new MutationObserver(mutations => {
         for (const mutation of mutations) {
             for (const node of mutation.addedNodes) {
                 if (!(node instanceof HTMLElement)) continue;
-
-                // Check if the added node is a vertically-snappable container or contains one
-                if (node.matches('div.vertically-snappable')) {
+                removeFeedAds(node.parentElement || document);
+                if (node.matches('div.vertically-snappable') || node.querySelector('div.vertically-snappable')) {
                     removeReelAds(node.parentElement || document);
-                } else if (node.querySelector('div.vertically-snappable')) {
-                    removeReelAds(node);
                 }
             }
         }
     });
 
-    reelObserver.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true });
+
 })();

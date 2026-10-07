@@ -15,7 +15,7 @@
   const isMessagesTab = (t) => {
     const tab = t && t.closest && t.closest('[role="tab"]');
     if (!tab) return null;
-    if (/^messages\b/i.test(tab.getAttribute('aria-label') || '')) return tab;
+    if (/^(messages|wiadomo[sś]ci|czat)\b/i.test(tab.getAttribute('aria-label') || '')) return tab;
     if ((tab.textContent || '').indexOf(MESSAGES_GLYPH) !== -1) return tab;
     return null;
   };

@@ -135,35 +135,64 @@
       ._al7j ._al66, ._9nqb { background-color: #242424; }
       .sp_M-AstDWg75z_3x { filter: invert(1) }
 
-      :root, .__fb-light-mode:root, .__fb-light-mode {
-        --card-background: #121212;
-        --primary-text: #fff;
-        --secondary-text: #dedede;
-        --secondary-icon: #dedede;
-        --secondary-button-background: #242424;
-        --input-background: #242424;
-        --overlay-alpha-80: rgba(0, 0, 0, 0.8);
-        --web-wash: #000;
-        --surface-background: #000;
-        --always-white: #000;
-        --comment-background: #242424;
-        --primary-icon: #dedede;
-        --secondary-button-text: #dedede;
-        --card-background-flat: #242424;
+      :root, .__fb-light-mode:root, .__fb-light-mode, .__fb-dark-mode:root, .__fb-dark-mode {
+        --card-background: #121212 !important;
+        --primary-text: #fff !important;
+        --secondary-text: #dedede !important;
+        --secondary-icon: #dedede !important;
+        --secondary-button-background: #242424 !important;
+        --input-background: #242424 !important;
+        --overlay-alpha-80: rgba(0, 0, 0, 0.8) !important;
+        --web-wash: #000 !important;
+        --surface-background: #000 !important;
+        --always-white: #000 !important;
+        --comment-background: #242424 !important;
+        --primary-icon: #dedede !important;
+        --secondary-button-text: #dedede !important;
+        --card-background-flat: #242424 !important;
+        --messenger-card-background: #000 !important;
+        --wash: #000 !important;
+        --divider: #363636 !important;
+        --hover-overlay: rgba(255, 255, 255, 0.08) !important;
+        --press-overlay: rgba(255, 255, 255, 0.15) !important;
+        --chat-incoming-message-bubble-background-color: #242526 !important;
+        --chat-replied-message-background-color: #242526 !important;
+        --chat-composer-button-color: #e4e6eb !important;
+        --hosted-view-selected-state: rgba(255, 255, 255, 0.1) !important;
+      }
+
+      /* Desktop Messenger root containers and panels */
+      html.__fb-dark-mode, html.__fb-dark-mode body,
+      div[role="main"], div[role="navigation"], div[data-pagelet="MWChatTab"] {
+        background-color: #000 !important;
+        color: #fff !important;
       }
     `;
     document.head.appendChild(style);
   }
 
+  function enforceDarkModeClass() {
+    const html = document.documentElement;
+    if (html.classList.contains('__fb-light-mode')) {
+      html.classList.remove('__fb-light-mode');
+    }
+    if (!html.classList.contains('__fb-dark-mode')) {
+      html.classList.add('__fb-dark-mode');
+    }
+  }
+
   loginAndCookieCSS();
+  enforceDarkModeClass();
 
   new MutationObserver(mutations => {
+    enforceDarkModeClass();
     if (mutations.some(m =>
       (m.type === 'childList' && Array.from(m.addedNodes).some(n =>
         n.tagName === 'STYLE' || (n.nodeType === 1 && n.hasAttribute('style')) ||
         (n.tagName === 'META' && n.getAttribute('name') === 'theme-color'))) ||
       (m.type === 'characterData' && m.target.parentNode?.tagName === 'STYLE') ||
       (m.type === 'attributes' && (m.attributeName === 'style' ||
+        m.attributeName === 'class' ||
         (m.target.tagName === 'META' && m.attributeName === 'content'))))
     ) processStyles();
   }).observe(document.documentElement, {
@@ -171,6 +200,6 @@
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['style', 'content']
+    attributeFilter: ['style', 'content', 'class']
   });
 })();
