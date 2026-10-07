@@ -7,22 +7,35 @@
 </h1>
 
 <p align="middle">
-    <a href='https://github.com/eepiemi/Materialbook/releases/latest'><img alt='Download' height='40' src='./assets/download.svg'/></a>
-    <a href='https://grev.shehryar.ae/?owner=eepiemi&repo=Materialbook'><img alt='Downloads count' height='40' src='https://downloads-count-materialbook.eepiemi.workers.dev'/></a>
+    <a href='https://github.com/b1alek/Materialbook-/releases/latest'><img alt='Download' height='40' src='./assets/download.svg'/></a>
 </p>
 
+### 📥 Install & Auto-Update with Obtainium
+
+You can automatically receive future updates on Android using [Obtainium](https://github.com/ImranR98/Obtainium):
+
+1. **Install Obtainium** on your Android device (if not already installed).
+2. Open Obtainium and tap **Add App** (`+`).
+3. Paste the App Source URL:
+   ```text
+   https://github.com/b1alek/Materialbook-
+   ```
+4. **Recommended Settings**:
+   * **Filter APK by regex**: `Materialbook_.*\.apk$`
+   * **Include prereleases**: Disabled (unless testing dev builds)
+   * **Version Detection**: Use release tag
+5. Tap **Add**. Obtainium will now fetch the latest APK and notify you whenever a new build is published!
+
+> [!NOTE]
+> **First-time Install Note**: If you previously had official `v1.0.0` from `eepiemi` installed, you must uninstall it first because the signing key is different. Subsequent updates from this fork will update seamlessly without data loss.
+
 <h2 align="middle">
-    🙋 Have issues? Enjoy the app? ☕
+    ✏️ This fork (`b1alek/Materialbook-`):
 </h2>
 
-<p align="middle">
-    <a href='https://github.com/eepiemi/Materialbook/issues/new/choose'><img alt='Open issue' height='40' src='./assets/open_issue.svg'/></a>
-    <a href='https://buymeacoffee.com/eepiemi'><img alt='Buy me a coffee!' height='40' src='./assets/buy_me_a_coffee.svg'/></a>
-</p>
+*  **PR #43 Integrated**: Adds option to show the **Messages section in Desktop mode** while keeping the rest of the interface mobile-optimized.
+*  **Automated CI/CD**: Builds and signs latest commits via GitHub Actions into direct release APKs.
 
-<h2 align="middle">
-    ✏️ This fork:
-</h2>
 
 *  Implements Material You theming for:
     *  The facebook app itself
