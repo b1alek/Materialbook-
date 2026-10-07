@@ -2,6 +2,9 @@ name: Build & Release Materialbook APK
 
 on:
   push:
+    branches:
+      - fork-main
+      - main
     tags:
       - 'v*.*.*'
   workflow_dispatch:
@@ -47,7 +50,13 @@ jobs:
             exit 1
           fi
 
-          TAG_NAME="${{ inputs.release_tag || github.ref_name }}"
+          INPUT_TAG="${{ github.event.inputs.release_tag }}"
+          if [ -n "$INPUT_TAG" ]; then
+            TAG_NAME="$INPUT_TAG"
+          else
+            TAG_NAME="${{ github.ref_name }}"
+          fi
+
           OUTPUT_APK="Materialbook_${TAG_NAME}.apk"
 
           if [ -n "${{ secrets.KEYSTORE_FILE }}" ]; then
@@ -64,37 +73,44 @@ jobs:
             rm -f $RUNNER_TEMP/keystores/keystore.jks
             echo "Signed with release keystore successfully."
           else
-            echo "::warning::KEYSTORE_FILE secret not found. Using APK as built (signed with default key)."
+            echo "::warning::KEYSTORE_FILE secret not found. Using default signed APK."
             cp "$UNSIGNED_APK" "$OUTPUT_APK"
           fi
 
           sha256sum "$OUTPUT_APK" > "${OUTPUT_APK}.sha256"
-          echo "apk_path=$OUTPUT_APK" >> $GITHUB_OUTPUT
-          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          
+          cat << EOF > release_notes.txt
+          ### Materialbook Fork Release (${TAG_NAME})
+          * Built from commit: ${{ github.sha }}
+          * Includes upstream \`main\` updates and PR #43 (Desktop Messages mode).
+
+          **SHA-256 Checksum:**
+          \`\`\`
+          $(cat "${OUTPUT_APK}.sha256")
+          \`\`\`
+          EOF
+
+          echo "apk_path=$OUTPUT_APK" >> "$GITHUB_OUTPUT"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.sign_step.outputs.tag_name }}
           name: Materialbook ${{ steps.sign_step.outputs.tag_name }}
-          body: |
-            ### Materialbook Fork Release (${{ steps.sign_step.outputs.tag_name }})
-            * Built from commit: `${{ github.sha }}`
-            * Includes upstream `main` updates and PR #43 (Desktop Messages mode).
-            
-            **SHA-256 Checksum:**
-            ```
-            $(cat ${{ steps.sign_step.outputs.apk_path }}.sha256)
-            ```
+          body_path: release_notes.txt
           files: |
             ${{ steps.sign_step.outputs.apk_path }}
             ${{ steps.sign_step.outputs.apk_path }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Artifact (Fallback)
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ steps.sign_step.outputs.apk_path }}
-          path: ${{ steps.sign_step.outputs.apk_path }}
+          path: |
+            ${{ steps.sign_step.outputs.apk_path }}
+            ${{ steps.sign_step.outputs.apk_path }}.sha256
           retention-days: 14
