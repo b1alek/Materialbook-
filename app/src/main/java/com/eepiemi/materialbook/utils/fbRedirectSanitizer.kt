@@ -2,32 +2,43 @@ package com.eepiemi.materialbook.utils
 
 import java.net.URL
 import java.net.URLDecoder
-import java.net.URLEncoder
 
 fun fbRedirectSanitizer(link: String): String {
     try {
         var url = URL(link)
 
-        if (url.host == "l.facebook.com" && url.path == "/l.php") {
-            val params = url.query.split("&").associate {
-                val (key, value) = it.split("=", limit = 2)
-                key to URLDecoder.decode(value, "UTF-8")
+        // Unwrap Facebook tracking redirect (l.facebook.com or lm.facebook.com)
+        if ((url.host == "l.facebook.com" || url.host == "lm.facebook.com") && url.path == "/l.php") {
+            val query = url.query
+            if (query != null) {
+                var target: String? = null
+                for (param in query.split("&")) {
+                    val parts = param.split("=", limit = 2)
+                    if (parts[0] == "u" && parts.size == 2) {
+                        target = URLDecoder.decode(parts[1], "UTF-8")
+                        break
+                    }
+                }
+                if (target != null) {
+                    url = URL(target)
+                } else {
+                    return link
+                }
             }
-            url = URL(params["u"] ?: return link)
         }
 
-        val params = url.query?.split("&")
-            ?.filter { !it.startsWith("fbclid=") }
-            ?.joinToString("&") { param ->
-                val (key, value) = param.split("=", limit = 2)
-                "$key=${URLEncoder.encode(value, "UTF-8")}"
-            }
+        // Clean query: strip fbclid without re-encoding existing query parameters
+        val cleanQuery = url.query?.split("&")
+            ?.filterNot { it.startsWith("fbclid=") || it == "fbclid" }
+            ?.joinToString("&")
+            ?.takeIf { it.isNotEmpty() }
 
         return buildString {
             append("${url.protocol}://${url.host}")
             if (url.port != -1 && url.port != url.defaultPort) append(":${url.port}")
             append(url.path)
-            if (!params.isNullOrBlank()) append("?").append(params)
+            if (cleanQuery != null) append("?").append(cleanQuery)
+            if (url.ref != null) append("#").append(url.ref)
         }
     } catch (_: Exception) {
         return link
