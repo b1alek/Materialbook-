@@ -23,7 +23,15 @@ class MainActivity : ComponentActivity() {
 
         val prefs = getSharedPreferences("materialbook_version", Context.MODE_PRIVATE)
         val lastVersionCode = prefs.getInt("last_version_code", 0)
-        val currentVersionCode = BuildConfig.VERSION_CODE
+        val currentVersionCode = runCatching {
+            val pInfo = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                packageManager.getPackageInfo(packageName, android.content.pm.PackageManager.PackageInfoFlags.of(0))
+            } else {
+                @Suppress("DEPRECATION")
+                packageManager.getPackageInfo(packageName, 0)
+            }
+            androidx.core.content.pm.PackageInfoCompat.getLongVersionCode(pInfo).toInt()
+        }.getOrElse { BuildConfig.VERSION_CODE }
         val hasPreviousInstall = File(filesDir.parentFile, "app_webview").exists()
         val isUpgrade = (lastVersionCode != 0 && currentVersionCode > lastVersionCode) ||
                 (lastVersionCode == 0 && hasPreviousInstall)
