@@ -66,7 +66,7 @@
         const tabbarHeight = tabbar ? parseFloat(getComputedStyle(tabbar).height) || parseFloat(tabbar.style.height) || 0 : 0;
 
         const isLandscape = window.innerWidth > window.innerHeight;
-        const maxHeaderWidth = isLandscape ? '540px' : '100%';
+        const maxHeaderWidth = isLandscape ? '560px' : '100%';
         const headerLeft = isLandscape ? '50%' : '0';
         const headerTransform = isLandscape ? 'translateX(-50%)' : 'none';
 
@@ -94,7 +94,7 @@
 
         if (scroller) {
             if (isLandscape) {
-                scroller.style.maxWidth = '540px';
+                scroller.style.maxWidth = '560px';
                 scroller.style.marginLeft = 'auto';
                 scroller.style.marginRight = 'auto';
             } else {

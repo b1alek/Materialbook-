@@ -2,6 +2,20 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.2] - 2026-10-08
+
+### Fixed
+- **Landscape Post Detail Clipping & Shift**: Fixed bug where viewing post permalinks, single post detail views, and comments in landscape orientation shifted content to the right and clipped it off-screen.
+  - Eliminated blanket `left: 50%; transform: translateX(-50%)` CSS rules on general `MContainer` elements that caused cascading offset multiplication.
+  - Centered mobile layout using safe root and scroller constraints (`max-width: 560px; margin: 0 auto; width: 100%;`).
+  - Isolated header centering strictly to fixed top navbar containers.
+- **Universal Text Selection & Copy Context Menu**:
+  - Restored ability to select and copy text on posts, captions, articles, and comments across Facebook mobile.
+  - Injected universal `-webkit-user-select: text !important; user-select: text !important; -webkit-touch-callout: default !important;` styling across post text, captions, and comments.
+  - Prevented card button click handlers from aborting text selection and opening post details while the user is actively selecting or highlighting text.
+
+---
+
 ## [v1.3.1] - 2026-10-08
 
 ### Fixed

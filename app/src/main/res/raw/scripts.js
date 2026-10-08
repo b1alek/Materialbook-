@@ -155,33 +155,51 @@
     }
 })();
 
-// Enable press and hold caption selection and apply custom selection color
+// Enable press and hold text selection, captions, comments, and copy context menu
 (() => {
-  const makeSelectable = (el) => {
-    if (el.closest('div[role="button"]')) return;
-    el.style.userSelect = 'text';
-    el.style.pointerEvents = 'auto';
-  };
-
-  const updateText = () => {
-    document.querySelectorAll('.native-text').forEach(makeSelectable);
-  };
-
   const selectionStyle = document.createElement('style');
+  selectionStyle.id = 'materialbook-text-selection-style';
   selectionStyle.textContent = `
-    .native-text::selection {
-      background: #ccc;
-      color: black;
+    /* Force text selection across Facebook posts, comments, articles, and captions */
+    div[dir="auto"],
+    span[dir="auto"],
+    p,
+    article,
+    [role="article"],
+    .native-text,
+    [data-ad-preview="message"] {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      -webkit-touch-callout: default !important;
+    }
+
+    ::selection {
+      background: #3b5998 !important;
+      color: #ffffff !important;
     }
   `;
   document.head.appendChild(selectionStyle);
 
-  updateText();
+  // Prevent card click navigation from hijacking text selection / drag gestures
+  let isSelecting = false;
+  document.addEventListener('selectstart', () => {
+    isSelecting = true;
+  }, { capture: true, passive: true });
 
-  new MutationObserver(updateText).observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+  document.addEventListener('selectionchange', () => {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
+      isSelecting = false;
+    }
+  }, { passive: true });
+
+  document.addEventListener('click', (e) => {
+    const sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) {
+      // User has selected text; suppress accidental navigation click
+      e.stopPropagation();
+    }
+  }, { capture: true });
 })();
 
 // Enhance Loading Overlay Script
@@ -280,19 +298,21 @@ observer.observe(document.body, { childList: true, subtree: true });
   style.textContent = `
     @media (orientation: landscape) and (max-width: 1000px) {
       /* Only target mobile layout, never desktop mode */
+      html:not([id="facebook"]) body > #root,
+      html:not([id="facebook"]) body > div:not([id]),
       html:not([id="facebook"]) div[data-type="vscroller"],
-      html:not([id="facebook"]) div[data-mcomponent="MContainer"].m,
-      html:not([id="facebook"]) #root > div {
-        max-width: 540px !important;
+      html:not([id="facebook"]) #root > div:only-child {
+        max-width: 560px !important;
         margin-left: auto !important;
         margin-right: auto !important;
+        width: 100% !important;
       }
-      /* Center header banner and tablist */
-      html:not([id="facebook"]) div[data-mcomponent="MContainer"][data-focusable="true"].m,
-      html:not([id="facebook"]) div[role="tablist"][data-mcomponent="MContainer"].m {
+      /* Center fixed top navigation safely */
+      html:not([id="facebook"]) div[data-tti-phase="-1"][data-mcomponent="MContainer"][data-type="container"][data-focusable="true"].m,
+      html:not([id="facebook"]) div[role="tablist"][data-tti-phase="-1"][data-type="container"][data-mcomponent="MContainer"].m {
         left: 50% !important;
         transform: translateX(-50%) !important;
-        max-width: 540px !important;
+        max-width: 560px !important;
         width: 100% !important;
       }
     }
