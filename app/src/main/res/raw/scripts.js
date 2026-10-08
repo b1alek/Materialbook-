@@ -158,16 +158,17 @@
 // Enable native long-press text selection & restore "See more" expansion
 (() => {
   const selectionStyle = document.createElement('style');
-  selectionStyle.id = 'materialbook-text-selection-v4';
+  selectionStyle.id = 'materialbook-text-selection-v5';
   selectionStyle.textContent = `
     /* Post text, comments, articles, captions: fully selectable */
-    [role="article"],
-    article,
     div[dir="auto"],
     span[dir="auto"],
     p,
-    .story_body_container,
-    .story_body_container *,
+    article,
+    [role="article"] div[dir="auto"],
+    [role="article"] span[dir="auto"],
+    .story_body_container div[dir="auto"],
+    .story_body_container span[dir="auto"],
     [data-ad-preview="message"],
     [data-ad-comet-preview="message"],
     .native-text,
@@ -177,6 +178,32 @@
       -webkit-user-select: text !important;
       user-select: text !important;
       -webkit-touch-callout: default !important;
+    }
+
+    /* Media elements, videos, reels, and player overlays: non-selectable, instant tap response */
+    video,
+    audio,
+    [data-sigil*="video"],
+    [data-sigil*="play"],
+    [data-mcomponent="VideoArea"],
+    [data-mcomponent="MVideo"],
+    [data-video-id],
+    [data-pagelet*="Video"],
+    [data-pagelet*="Reel"],
+    [aria-label*="play" i],
+    [aria-label*="odtwórz" i],
+    [aria-label*="odtwarz" i],
+    [aria-label*="pause" i],
+    [aria-label*="pauza" i],
+    [aria-label*="wstrzymaj" i],
+    [aria-label*="reel" i],
+    [aria-label*="rolk" i],
+    [aria-label*="video" i],
+    [aria-label*="wideo" i] {
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      touch-action: manipulation !important;
+      cursor: pointer !important;
     }
 
     /* Leaf interactive controls: non-selectable, instant tap response */
@@ -220,8 +247,45 @@
     return false;
   };
 
+  // Dedicated media / Reels / video element detector
+  const isMediaElement = (el) => {
+    if (!el || el === document.body || el === document.documentElement) return false;
+
+    // Direct video/audio tag or inside one
+    if (el.closest && el.closest('video, audio')) return true;
+
+    // Facebook video/reels sigils, components, and media attributes
+    const mediaContainer = el.closest && el.closest(
+      '[data-sigil*="video" i], [data-sigil*="play" i], ' +
+      '[data-mcomponent="VideoArea"], [data-mcomponent="MVideo"], ' +
+      '[data-video-id], [data-pagelet*="Video" i], [data-pagelet*="Reel" i], ' +
+      '[aria-label*="play" i], [aria-label*="odtwórz" i], [aria-label*="odtwarz" i], ' +
+      '[aria-label*="pause" i], [aria-label*="pauza" i], [aria-label*="wstrzymaj" i], ' +
+      '[aria-label*="reel" i], [aria-label*="rolk" i], ' +
+      '[aria-label*="video" i], [aria-label*="wideo" i], ' +
+      '[aria-label*="mute" i], [aria-label*="wycisz" i], [aria-label*="głośn" i]'
+    );
+    if (mediaContainer) return true;
+
+    // Element or immediate parent/wrapper contains a video tag (e.g. click backdrop overlay)
+    if (el.querySelector && el.querySelector('video, audio')) return true;
+    const parent = el.parentElement;
+    if (parent) {
+      if (parent.querySelector && parent.querySelector('video, audio')) return true;
+      const grandParent = parent.parentElement;
+      if (grandParent && !grandParent.matches('[role="feed"], #root, body') && grandParent.querySelector && grandParent.querySelector('video, audio')) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   const isInteractiveLeaf = (target) => {
     if (!target || target === document.body || target === document.documentElement) return false;
+
+    // Media and video elements are interactive leaf controls
+    if (isMediaElement(target)) return true;
 
     // Check target and immediate parent for "See more" pattern
     if (isSeeMoreElement(target) || isSeeMoreElement(target.parentElement)) return true;
@@ -291,7 +355,7 @@
     const target = e.target;
     if (!target) return;
 
-    if (isInteractiveLeaf(target) || target.closest('img, video, input, textarea')) {
+    if (isMediaElement(target) || isInteractiveLeaf(target) || target.closest('img, video, audio, input, textarea')) {
       return;
     }
 
@@ -300,6 +364,8 @@
       '.native-text, .story_body_container, [data-ad-preview="message"]'
     );
     if (isTextContainer) {
+      if (isMediaElement(target)) return;
+
       // Prevent Facebook from canceling native selection
       e.stopImmediatePropagation();
 
@@ -310,8 +376,17 @@
     }
   }, true);
 
-  // 2. Safe click handling: allow buttons through; clear selections on button taps; prevent card navigation during text selection
+  // 2. Safe click handling: allow buttons & media through; clear selections on interactive taps; prevent card navigation during text selection
   document.addEventListener('click', (e) => {
+    // Media / video playback: never intercept or block clicks
+    if (isMediaElement(e.target)) {
+      if (hasActiveSelection()) {
+        const sel = window.getSelection();
+        if (sel) sel.removeAllRanges();
+      }
+      return;
+    }
+
     const interactive = isInteractiveLeaf(e.target);
 
     if (interactive) {
