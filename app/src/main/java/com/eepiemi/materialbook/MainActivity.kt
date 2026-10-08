@@ -37,8 +37,9 @@ class MainActivity : ComponentActivity() {
                 (lastVersionCode == 0 && hasPreviousInstall)
 
         if (isUpgrade) {
-            // Emulate OS "Clear cache": purge HTTP disk cache and precompiled V8 bytecode
+            // Emulate OS "Clear cache": purge HTTP disk cache AND precompiled V8 code cache
             runCatching { cacheDir.deleteRecursively() }
+            runCatching { codeCacheDir.deleteRecursively() }
         }
 
         // Discard stale Chromium process and session state bundles on app upgrade
