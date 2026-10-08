@@ -178,7 +178,7 @@ fun MaterialbookWebView(
     val isAutoRevert by settingsVM.isRevertDesktop.collectAsState()
     val isAutoDesktop = rememberAutoDesktop()
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(isAutoDesktop) {
         if (isAutoDesktop && !isDesktop) {
             settingsVM.setRevertDesktop(true)
             settingsVM.setDesktopLayout(true)

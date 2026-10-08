@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.1] - 2026-10-08
+
+### Fixed
+- **Landscape Layout Centering**: Fixed bug where rotating the device into landscape caused the Facebook mobile feed and navigation to remain stuck in a narrow ~450px column on the left with an empty black void on the right.
+- **Responsive Mobile Landscape Styles**:
+  - Injected declarative responsive CSS (`@media (orientation: landscape)`) to center mobile feed scroller (`max-width: 540px; margin: 0 auto;`).
+  - Centered sticky header banner and tablist horizontally over the feed in landscape mode.
+  - Added resize and orientation listeners to dynamically adjust header geometry without requiring page reloads.
+- **Tablet Auto-Desktop Boundary**: Restricted `rememberAutoDesktop()` strictly to physical tablets (`smallestScreenWidthDp >= 600`), preventing phones from triggering unwanted desktop mode switching or layout distortions.
+
+---
+
 ## [v1.3.0] - 2026-10-08
 
 ### Added
