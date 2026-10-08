@@ -29,6 +29,7 @@ class SettingsDataStore(private val context: Context) {
         val MESSAGES_DESKTOP = booleanPreferencesKey("messages_desktop")
         val isRevertDesktop = booleanPreferencesKey("is_revert_desktop")
         val PRESERVE_SCROLL = booleanPreferencesKey("preserve_scroll")
+        val LAST_VERSION_CODE = androidx.datastore.preferences.core.intPreferencesKey("last_version_code")
     }
 
     val prefs = context.dataStore.data
@@ -116,5 +117,10 @@ class SettingsDataStore(private val context: Context) {
     val preserveScroll = context.dataStore.data.map { it[PRESERVE_SCROLL] ?: true }
     suspend fun setPreserveScroll(preserveScroll: Boolean) {
         context.dataStore.edit { it[PRESERVE_SCROLL] = preserveScroll }
+    }
+
+    val lastVersionCode = context.dataStore.data.map { it[LAST_VERSION_CODE] ?: 0 }
+    suspend fun setLastVersionCode(lastVersionCode: Int) {
+        context.dataStore.edit { it[LAST_VERSION_CODE] = lastVersionCode }
     }
 }

@@ -641,3 +641,90 @@ observer.observe(document.body, { childList: true, subtree: true });
         return originalCreateObjectURL(blob);
     };
 })();
+
+// Skeleton Freeze Watchdog with Session Circuit Breaker
+(function() {
+  const WATCHDOG_TIMEOUT_MS = 12000;
+  const CIRCUIT_BREAKER_KEY = 'mbook_watchdog_reloaded';
+
+  const isFeedPage = () => {
+    const path = window.location.pathname;
+    return path === '/' || path === '/home.php' || (typeof window.isFeed === 'function' && window.isFeed());
+  };
+
+  const hasLoadedArticles = () => {
+    return document.querySelectorAll('[role="article"]').length > 0;
+  };
+
+  const checkSkeletonStall = () => {
+    if (!isFeedPage()) return;
+    if (hasLoadedArticles()) return;
+    if (typeof navigator.onLine === 'boolean' && !navigator.onLine) return;
+
+    const alreadyReloaded = sessionStorage.getItem(CIRCUIT_BREAKER_KEY) === 'true';
+
+    if (!alreadyReloaded) {
+      sessionStorage.setItem(CIRCUIT_BREAKER_KEY, 'true');
+      console.warn('Materialbook Watchdog: Feed skeleton stall detected. Executing single auto-recovery reload.');
+      if (window.caches && caches.keys) {
+        caches.keys().then((keys) => {
+          return Promise.all(keys.map((k) => caches.delete(k)));
+        }).finally(() => {
+          window.location.reload();
+        });
+      } else {
+        window.location.reload();
+      }
+    } else {
+      if (document.getElementById('mbook-feed-recovery-banner')) return;
+      const banner = document.createElement('div');
+      banner.id = 'mbook-feed-recovery-banner';
+      banner.setAttribute('style', `
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #242526;
+        color: #e4e6eb;
+        padding: 10px 16px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 999999;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 14px;
+      `);
+      banner.innerHTML = `
+        <span>Feed taking too long to load</span>
+        <button id="mbook-feed-retry-btn" style="
+          background: #1877f2;
+          color: white;
+          border: none;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-weight: 600;
+          cursor: pointer;
+        ">Reload</button>
+      `;
+      document.body.appendChild(banner);
+      document.getElementById('mbook-feed-retry-btn')?.addEventListener('click', () => {
+        sessionStorage.removeItem(CIRCUIT_BREAKER_KEY);
+        window.location.reload();
+      });
+    }
+  };
+
+  const armWatchdog = () => {
+    setTimeout(() => {
+      checkSkeletonStall();
+    }, WATCHDOG_TIMEOUT_MS);
+  };
+
+  if (document.readyState === 'complete') {
+    armWatchdog();
+  } else {
+    window.addEventListener('load', armWatchdog, { once: true });
+  }
+})();

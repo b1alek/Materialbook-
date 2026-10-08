@@ -64,6 +64,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun MaterialbookWebView(
     url: String,
+    isUpgrade: Boolean = false,
     settingsVM: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -262,6 +263,8 @@ fun MaterialbookWebView(
                     resources = resources,
                     settings = settingsVM
                 )
+                runCatching { context.cacheDir.deleteRecursively() }
+                runCatching { state.nativeWebView.clearCache(true) }
                 navigator.reload()
             }
         )
@@ -343,6 +346,23 @@ fun MaterialbookWebView(
         platformWebViewParams = fileChooserWebViewParams(),
         captureBackPresses = false,
         onCreated = { webView ->
+            if (isUpgrade) {
+                webView.clearCache(true)
+                webView.evaluateJavascript(
+                    """
+                    (function() {
+                        try {
+                            if (window.caches && caches.keys) {
+                                caches.keys().then(function(keys) {
+                                    keys.forEach(function(key) { caches.delete(key); });
+                                });
+                            }
+                        } catch (e) {}
+                    })();
+                    """.trimIndent(),
+                    null
+                )
+            }
 
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
