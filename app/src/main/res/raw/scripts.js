@@ -155,10 +155,10 @@
     }
 })();
 
-// Enable press and hold text selection while preserving "See more" and interactive buttons
+// Enable native long-press text selection & restore "See more" expansion
 (() => {
   const selectionStyle = document.createElement('style');
-  selectionStyle.id = 'materialbook-text-selection-style';
+  selectionStyle.id = 'materialbook-text-selection-v3';
   selectionStyle.textContent = `
     /* Allow text selection across Facebook posts, comments, articles, and captions */
     div[dir="auto"],
@@ -173,11 +173,13 @@
       -webkit-touch-callout: default !important;
     }
 
-    /* Restore button touch response for "See more", comments, reactions, and controls inside text */
-    [dir="auto"] [role="button"],
-    [dir="auto"] [role="button"] *,
-    [dir="auto"] button,
-    [dir="auto"] button *,
+    /* Restore button touch response for "See more", comments, reactions, and controls */
+    [role="button"],
+    button,
+    [data-sigil*="more"],
+    [data-action-id],
+    .native-text [role="button"],
+    div[dir="auto"] [role="button"],
     nav [role="button"],
     header [role="button"],
     footer [role="button"] {
@@ -194,24 +196,40 @@
   `;
   document.head.appendChild(selectionStyle);
 
-  // Helper to distinguish leaf interactive buttons ("See more", Like, Comment)
-  // from outer card wrapper containers that also use role="button".
-  const getLeafInteractive = (target) => {
-    if (!target || target === document.body || target === document.documentElement) return null;
-    const candidate = target.closest('button, [role="button"]');
-    if (!candidate) return null;
+  // Internationalized and structural check for "See more" / "Zobacz więcej" buttons
+  const SEE_MORE_REGEX = /(\.{3}\s*)?(see more|zobacz więcej|pokaż więcej|see less|zobacz mniej|more|więcej)/i;
 
-    // Discard outer feed unit cards or article wrappers
-    if (candidate.matches('[role="article"], [data-pagelet*="FeedUnit"], [data-ft]')) return null;
-
-    // A leaf button does not have nested buttons inside it. Outer post cards contain child buttons.
-    if (candidate.getAttribute('role') === 'button') {
-      const nestedBtn = candidate.querySelector('button, [role="button"]');
-      if (nestedBtn && nestedBtn !== candidate) {
-        return null; // Outer card container
-      }
+  const isSeeMoreElement = (el) => {
+    if (!el || el === document.body || el === document.documentElement) return false;
+    if (el.matches && (el.matches('[data-sigil*="more"]') || el.matches('[data-action-id]'))) return true;
+    const txt = (el.textContent || '').trim();
+    if (txt.length > 0 && txt.length < 35 && SEE_MORE_REGEX.test(txt)) {
+      return true;
     }
-    return candidate;
+    return false;
+  };
+
+  const isInteractiveLeaf = (target) => {
+    if (!target || target === document.body || target === document.documentElement) return false;
+
+    // Check target and immediate parent for "See more" pattern
+    if (isSeeMoreElement(target) || isSeeMoreElement(target.parentElement)) return true;
+
+    // Native links and buttons
+    const linkOrBtn = target.closest('a, button');
+    if (linkOrBtn) return true;
+
+    // ARIA buttons (excluding outer post card containers)
+    const roleBtn = target.closest('[role="button"]');
+    if (roleBtn) {
+      if (roleBtn.matches('[role="article"], [data-pagelet*="FeedUnit"], [data-ft]')) return false;
+      const rect = roleBtn.getBoundingClientRect();
+      // Large cards are container wrappers, not leaf action buttons
+      if (rect.height > 120 && rect.width > 250) return false;
+      return true;
+    }
+
+    return false;
   };
 
   const hasActiveSelection = () => {
@@ -219,24 +237,41 @@
     return Boolean(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
   };
 
-  // Intercept clicks in capture phase: allow leaf buttons through, suppress card click only on active text selection
+  // 1. Unblock Chromium long-press Gesture: Stop Facebook from calling e.preventDefault() on contextmenu
+  window.addEventListener('contextmenu', (e) => {
+    const target = e.target;
+    if (!target) return;
+
+    // Ignore interactive controls, images, or form inputs
+    if (isInteractiveLeaf(target) || target.closest('img, video, input, textarea')) {
+      return;
+    }
+
+    const isTextContainer = target.closest('div[dir="auto"], span[dir="auto"], p, article, [role="article"], .native-text');
+    if (isTextContainer) {
+      // Stopping propagation prevents Facebook's listener from executing event.preventDefault().
+      // Chromium sees that contextmenu was not canceled, creating word selection and triggering Android ActionMode!
+      e.stopImmediatePropagation();
+    }
+  }, true);
+
+  // 2. Safe click handling: allow "See more", reactions, and comments through; suppress accidental card navigation during text selection
   document.addEventListener('click', (e) => {
-    const leaf = getLeafInteractive(e.target);
-    if (leaf) {
-      // Leaf button tapped ("See more", reaction, comment expansion).
-      // If user had active text selection, clear it so it doesn't linger, and allow the button click to proceed!
+    const interactive = isInteractiveLeaf(e.target);
+
+    if (interactive) {
       if (hasActiveSelection()) {
         const sel = window.getSelection();
         if (sel) sel.removeAllRanges();
       }
-      return; // Do NOT stop propagation
+      return; // Do NOT stop propagation - allow Facebook to process the button click!
     }
 
-    // If tapping plain post body text while selection is active, suppress accidental card navigation
+    // If user has highlighted text and accidentally releases finger on card background, prevent navigating away
     if (hasActiveSelection()) {
       e.stopPropagation();
     }
-  }, { capture: true });
+  }, true);
 })();
 
 // Enhance Loading Overlay Script

@@ -2,6 +2,19 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.4] - 2026-10-08
+
+### Fixed
+- **Native Long-Press Text Selection & Android ActionMode**:
+  - Neutralized Facebook's global `contextmenu` cancellation on post text and comments. In Android WebView, Chromium cancels `GestureLongPress` and suppresses the native `ActionMode` (Copy / Share / Select all) when a script calls `event.preventDefault()`. By intercepting `contextmenu` in the capture phase on text elements and halting propagation, Facebook is prevented from aborting native text selection.
+  - Enabled `isLongClickable = true` and `isHapticFeedbackEnabled = true` on the native WebView instance in `MaterialbookWV.kt`.
+- **"See more" ("Zobacz więcej") Semantic Matcher**:
+  - Replaced rigid tag-based role checks with structural and multilingual pattern recognition (`see more`, `zobacz więcej`, `pokaż więcej`, `data-sigil*="more"`, `data-action-id`).
+  - Addressed Facebook's DOM reality where "See more" is rendered as an unadorned inline `<span>` rather than an explicit `button` or `[role="button"]`.
+  - Guaranteed immediate post expansion upon tap, clearing lingering text selections without navigating away.
+
+---
+
 ## [v1.3.3] - 2026-10-08
 
 ### Fixed

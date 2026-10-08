@@ -396,6 +396,9 @@ fun MaterialbookWebView(
                 settings.builtInZoomControls = true
                 settings.displayZoomControls = false
 
+                isLongClickable = true
+                isHapticFeedbackEnabled = true
+
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                     settings.isAlgorithmicDarkeningAllowed = true
                 }
