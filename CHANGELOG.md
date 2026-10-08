@@ -2,6 +2,16 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.9] - 2026-10-08
+
+### Fixed
+- **Eliminated Intrusive Feed Watchdog Popup**:
+  - Removed synthetic JavaScript watchdog and the popup banner (`Feed taking too long to load`) from `scripts.js`.
+  - The watchdog relied on checking `[role="article"]`, which mobile Facebook (`m.facebook.com`) does not use for feed posts (mobile uses `data-mcomponent="MContainer"` and `data-tracking-duration-id`). This selector mismatch caused false-positive stalls and intrusive popup overlays during normal operation.
+  - Native cache cleanup (`codeCacheDir` + `cacheDir` in `MainActivity.kt`) and `rememberWebViewState` already resolve post-update freezes at the platform level, making the synthetic DOM watchdog redundant.
+
+---
+
 ## [v1.3.8] - 2026-10-08
 
 ### Fixed
