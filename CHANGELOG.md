@@ -2,6 +2,17 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.3] - 2026-10-08
+
+### Fixed
+- **"See more" ("Zobacz więcej") & Interactive Buttons Responsiveness**:
+  - Restored clickability and immediate expansion of truncated posts, comments, reactions, and reply toggles.
+  - Eliminated Blink touch-selection hijacking on buttons by applying `touch-action: manipulation !important` and `user-select: none !important` specifically to interactive controls nested within text (`[dir="auto"] [role="button"]`, `button`).
+  - Allowed post text (`[dir="auto"]`) and embedded hyperlinks (`a`) to remain fully selectable for copying.
+  - Replaced indiscriminate capture-phase click interception with a leaf interactive resolver (`getLeafInteractive`), ensuring buttons execute immediately even if a text selection exists.
+
+---
+
 ## [v1.3.2] - 2026-10-08
 
 ### Fixed
