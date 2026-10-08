@@ -28,6 +28,7 @@ class SettingsDataStore(private val context: Context) {
         val HIDE_GROUPS = booleanPreferencesKey("hide_groups")
         val MESSAGES_DESKTOP = booleanPreferencesKey("messages_desktop")
         val isRevertDesktop = booleanPreferencesKey("is_revert_desktop")
+        val PRESERVE_SCROLL = booleanPreferencesKey("preserve_scroll")
     }
 
     val prefs = context.dataStore.data
@@ -110,5 +111,10 @@ class SettingsDataStore(private val context: Context) {
     val hideGroups = context.dataStore.data.map { it[HIDE_GROUPS] ?: false }
     suspend fun setHideGroups(hideGroups: Boolean) {
         context.dataStore.edit { it[HIDE_GROUPS] = hideGroups }
+    }
+
+    val preserveScroll = context.dataStore.data.map { it[PRESERVE_SCROLL] ?: true }
+    suspend fun setPreserveScroll(preserveScroll: Boolean) {
+        context.dataStore.edit { it[PRESERVE_SCROLL] = preserveScroll }
     }
 }

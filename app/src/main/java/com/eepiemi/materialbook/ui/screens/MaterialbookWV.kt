@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,11 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalResources
 import androidx.core.graphics.ColorUtils
 import androidx.core.net.toUri
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.multiplatform.webview.web.LoadingState
 import com.multiplatform.webview.web.WebView
@@ -65,8 +69,27 @@ fun MaterialbookWebView(
     val context = LocalContext.current
     val activity = LocalActivity.current
     val resources = LocalResources.current
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     val state = rememberSaveableWebViewState(url)
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    runCatching { state.nativeWebView.onPause() }
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    runCatching { state.nativeWebView.onResume() }
+                }
+                else -> Unit
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
     // Desktop-mode override that applies only while the Messages section is open.
     val messagesDesktopSetting by settingsVM.messagesDesktop.collectAsState()
     val currentMessagesDesktopSetting by rememberUpdatedState(messagesDesktopSetting)
