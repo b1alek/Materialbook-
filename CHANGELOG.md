@@ -2,6 +2,24 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.0] - 2026-10-08
+
+### Added
+- **Feed Position & Scroll Retention**: Added automatic reading position preservation when switching apps or rotating the device screen.
+- **Feed Anchor Userscript (`preserve_scroll.js`)**:
+  - Dynamically tracks topmost visible post elements (`role="article"`, `[data-ft]`) and stores anchor data in `sessionStorage`.
+  - Re-anchors viewport via `element.scrollIntoView()` on viewport resize and app resume.
+  - Intercepts Facebook's automated `scrollTo(0, 0)` calls for 1500ms following resume or rotation.
+  - Implements user touch escape hatch (`touchstart`, `pointerdown`) to preserve deliberate manual scroll-to-top actions (e.g. tapping the Home tab or pulling down to refresh).
+- **Settings Toggle**: Added "Preserve feed position" toggle switch in Settings UI with DataStore persistence (default: enabled).
+
+### Fixed
+- **Background Media Silence**: Automatically pauses active `<video>` and `<audio>` elements when the app moves to background (`visibilitychange` / `pagehide`).
+- **Android Lifecycle Resource Drain**: Bound WebView lifecycle to Activity lifecycle (`WebView.onPause()` / `onResume()`), halting background JavaScript execution and saving battery.
+- **Duplicate Activity Spawning**: Configured `android:launchMode="singleTask"` and implemented `onNewIntent()` in `MainActivity.kt` to handle external links and app switching cleanly without creating redundant instances.
+
+---
+
 ## [v1.2.1] - 2026-10-07
 
 ### Fixed
