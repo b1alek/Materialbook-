@@ -2,6 +2,22 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.7] - 2026-10-08
+
+### Fixed
+- **Post-Update Frozen Mainpage & Skeleton Shimmer Stalls**:
+  - Automatically detected application version upgrade using persistent version tracking (`SettingsDataStore` and instant app preferences).
+  - Emulated Android OS "Clear cache" on version upgrade by programmatically purging `context.cacheDir` (clears stale HTTP disk cache and precompiled V8 bytecodes).
+  - Preserved `CookieManager` and persistent storage databases completely, ensuring users never get logged out.
+  - Invalidated stale `savedInstanceState` upon package updates: bypassed deserialization of dead Chromium process bundles in `MainActivity.onCreate` and `rememberSaveableWebViewState`, guaranteeing fresh, clean navigation to the feed or target URL.
+  - Added eviction of ServiceWorker `CacheStorage` in `onCreated` upon update to remove outdated offline application shells.
+  - Wrapped all raw user scripts in `fetchScripts.kt` inside isolated try-catch IIFE blocks, preventing syntax or runtime errors in individual scripts from breaking the execution bundle.
+  - Hardened `hide_stories.js` against unhandled `ReferenceError` when desktop mode detection is evaluated.
+  - Implemented an adaptive feed watchdog in `scripts.js` with a 12-second threshold and strict single-shot session circuit-breaker (`sessionStorage`), preventing infinite reload death loops while recovering stuck skeleton views.
+  - Enhanced Settings reload action to clear cache and reload cleanly on manual trigger.
+
+---
+
 ## [v1.3.6] - 2026-10-08
 
 ### Fixed

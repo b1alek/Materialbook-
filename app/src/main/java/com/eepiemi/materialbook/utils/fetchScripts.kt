@@ -19,7 +19,15 @@ suspend fun fetchScripts(
 ): String {
     return buildString {
         scripts.filter { it.isEnabled }.forEach { script ->
-            append(fallbackContent(script.resourceId))
+            val content = fallbackContent(script.resourceId)
+            append("/* Script: ${script.scriptTitle} */\n")
+            append("try {\n")
+            append("  (function() {\n")
+            append(content)
+            append("\n  })();\n")
+            append("} catch (err) {\n")
+            append("  console.error('Error executing script: ${script.scriptTitle}', err);\n")
+            append("};\n\n")
         }
     }
 }
