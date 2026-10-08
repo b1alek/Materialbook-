@@ -65,10 +65,17 @@
         const navbarHeight = navbar ? parseFloat(getComputedStyle(navbar).height) || parseFloat(navbar.style.height) || 0 : 0;
         const tabbarHeight = tabbar ? parseFloat(getComputedStyle(tabbar).height) || parseFloat(tabbar.style.height) || 0 : 0;
 
+        const isLandscape = window.innerWidth > window.innerHeight;
+        const maxHeaderWidth = isLandscape ? '540px' : '100%';
+        const headerLeft = isLandscape ? '50%' : '0';
+        const headerTransform = isLandscape ? 'translateX(-50%)' : 'none';
+
         if (hasLogo) Object.assign(navbar.style, {
             position: 'fixed',
             top: '0',
-            left: '0',
+            left: headerLeft,
+            transform: headerTransform,
+            maxWidth: maxHeaderWidth,
             width: '100%',
             zIndex: '1000',
             pointerEvents: 'auto'
@@ -77,13 +84,25 @@
         if (hasFeed) Object.assign(tabbar.style, {
             position: 'fixed',
             top: hasLogo ? navbarHeight + 'px' : '',
-            left: '0',
+            left: headerLeft,
+            transform: headerTransform,
+            maxWidth: maxHeaderWidth,
             width: '100%',
             zIndex: '999',
             pointerEvents: 'auto'
         });
 
         if (scroller) {
+            if (isLandscape) {
+                scroller.style.maxWidth = '540px';
+                scroller.style.marginLeft = 'auto';
+                scroller.style.marginRight = 'auto';
+            } else {
+                scroller.style.maxWidth = '';
+                scroller.style.marginLeft = '';
+                scroller.style.marginRight = '';
+            }
+
             const offset = (hasLogo ? navbarHeight : 0) + (hasFeed ? tabbarHeight : 0);
             const scrollContent = scroller.querySelector(':scope > div:not(.pull-to-refresh-spinner-container)');
             scrollContent ? scrollContent.style.marginTop = offset + 'px' : scroller.style.paddingTop = offset + 'px';
@@ -108,5 +127,7 @@
     };
 
     applyStyles();
+    window.addEventListener('resize', applyStyles, { passive: true });
+    window.addEventListener('orientationchange', applyStyles, { passive: true });
     new MutationObserver(applyStyles).observe(document.body, { childList: true, subtree: true });
 })();

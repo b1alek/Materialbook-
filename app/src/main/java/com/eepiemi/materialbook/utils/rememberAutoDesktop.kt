@@ -8,11 +8,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 @Composable
 fun rememberAutoDesktop(): Boolean {
     val configuration = LocalConfiguration.current
-    return remember {
-        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            true
-        } else {
-            configuration.smallestScreenWidthDp >= 600
-        }
+    return remember(configuration.smallestScreenWidthDp) {
+        configuration.smallestScreenWidthDp >= 600
     }
 }

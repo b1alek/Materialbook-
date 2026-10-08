@@ -273,6 +273,33 @@ observer.observe(document.body, { childList: true, subtree: true });
   document.head.appendChild(style);
 })();
 
+// Responsive Mobile Landscape Centering
+(function() {
+  const style = document.createElement('style');
+  style.id = 'materialbook-responsive-landscape';
+  style.textContent = `
+    @media (orientation: landscape) and (max-width: 1000px) {
+      /* Only target mobile layout, never desktop mode */
+      html:not([id="facebook"]) div[data-type="vscroller"],
+      html:not([id="facebook"]) div[data-mcomponent="MContainer"].m,
+      html:not([id="facebook"]) #root > div {
+        max-width: 540px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+      /* Center header banner and tablist */
+      html:not([id="facebook"]) div[data-mcomponent="MContainer"][data-focusable="true"].m,
+      html:not([id="facebook"]) div[role="tablist"][data-mcomponent="MContainer"].m {
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        max-width: 540px !important;
+        width: 100% !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+})();
+
 
 /* The below scripts are specific to com.eepiemi.materialbook application. */
 
