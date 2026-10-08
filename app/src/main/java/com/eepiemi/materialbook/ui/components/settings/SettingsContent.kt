@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Diversity1
 import androidx.compose.material.icons.filled.EmojiPeople
 import androidx.compose.material.icons.filled.Padding
 import androidx.compose.material.icons.filled.Try
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.DesktopWindows
@@ -71,6 +72,7 @@ fun SettingsContent(
     val pinchToZoom = viewModel.pinchToZoom.collectAsState()
     val materialYou = viewModel.materialYou.collectAsState()
     val amoledBlack = viewModel.amoledBlack.collectAsState()
+    val preserveScroll = viewModel.preserveScroll.collectAsState()
 
     val isAutoDesktop = rememberAutoDesktop()
 
@@ -107,6 +109,13 @@ fun SettingsContent(
                     supportingText = stringResource(R.string.enable_copy_to_clipboard_button_on_media_view),
                     isActive = enableCopyToClipboard.value,
                     onClick = { viewModel.setEnableCopyToClipboard(!enableCopyToClipboard.value) },
+                ),
+                SettingsItem(
+                    icon = Icons.Outlined.Bookmark,
+                    title = "Preserve feed position",
+                    supportingText = "Prevent feed from reloading or scrolling to top when switching apps or rotating screen",
+                    isActive = preserveScroll.value,
+                    onClick = { viewModel.setPreserveScroll(!preserveScroll.value) },
                 ),
                 SettingsItem(
                     icon = Icons.Outlined.GridView,

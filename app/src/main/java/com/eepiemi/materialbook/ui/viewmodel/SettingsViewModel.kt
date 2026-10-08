@@ -17,6 +17,7 @@ import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.IMMERSIVE
 import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.MATERIAL_YOU
 import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.MESSAGES_DESKTOP
 import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.PINCH_TO_ZOOM
+import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.PRESERVE_SCROLL
 import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.REMOVE_ADS
 import com.eepiemi.materialbook.data.local.SettingsDataStore.Companion.STICKY_NAVBAR
 import kotlinx.coroutines.flow.SharingStarted
@@ -107,6 +108,11 @@ class SettingsViewModel(
     val hideGroups = dataStore.hideGroups.stateIn(
         scope = viewModelScope,
         initialValue = initialPrefs[HIDE_GROUPS] ?: false,
+        started = SharingStarted.WhileSubscribed()
+    )
+    val preserveScroll = dataStore.preserveScroll.stateIn(
+        scope = viewModelScope,
+        initialValue = initialPrefs[PRESERVE_SCROLL] ?: true,
         started = SharingStarted.WhileSubscribed()
     )
     val isRevertDesktop = dataStore.revertDesktop.stateIn(
@@ -203,6 +209,10 @@ class SettingsViewModel(
         viewModelScope.launch {
             dataStore.setHideGroups(hideGroups)
         }
+    }
+
+    fun setPreserveScroll(preserveScroll: Boolean) = viewModelScope.launch {
+        dataStore.setPreserveScroll(preserveScroll)
     }
 
     fun setRevertDesktop(revertDesktop: Boolean) {
