@@ -39,7 +39,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.multiplatform.webview.web.LoadingState
 import com.multiplatform.webview.web.WebView
-import com.multiplatform.webview.web.rememberSaveableWebViewState
+import com.multiplatform.webview.web.rememberWebViewState
 import com.multiplatform.webview.web.rememberWebViewNavigator
 import com.eepiemi.materialbook.R
 import com.eepiemi.materialbook.ui.components.NetworkErrorDialog
@@ -72,7 +72,7 @@ fun MaterialbookWebView(
     val resources = LocalResources.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    val state = rememberSaveableWebViewState(url)
+    val state = rememberWebViewState(url)
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -264,8 +264,9 @@ fun MaterialbookWebView(
                     settings = settingsVM
                 )
                 runCatching { context.cacheDir.deleteRecursively() }
+                runCatching { context.codeCacheDir.deleteRecursively() }
                 runCatching { state.nativeWebView.clearCache(true) }
-                navigator.reload()
+                navigator.loadUrl("https://facebook.com/")
             }
         )
     }
@@ -347,21 +348,9 @@ fun MaterialbookWebView(
         captureBackPresses = false,
         onCreated = { webView ->
             if (isUpgrade) {
+                runCatching { context.cacheDir.deleteRecursively() }
+                runCatching { context.codeCacheDir.deleteRecursively() }
                 webView.clearCache(true)
-                webView.evaluateJavascript(
-                    """
-                    (function() {
-                        try {
-                            if (window.caches && caches.keys) {
-                                caches.keys().then(function(keys) {
-                                    keys.forEach(function(key) { caches.delete(key); });
-                                });
-                            }
-                        } catch (e) {}
-                    })();
-                    """.trimIndent(),
-                    null
-                )
             }
 
             val cookieManager = CookieManager.getInstance()
@@ -382,7 +371,18 @@ fun MaterialbookWebView(
 
             webView.apply {
                 addJavascriptInterface(
-                    MaterialbookSettings { settingsToggle = true },
+                    MaterialbookSettings(
+                        toggleSettings = { settingsToggle = true },
+                        cleanReloadAction = {
+                            activity?.runOnUiThread {
+                                isLoading = true
+                                runCatching { context.cacheDir.deleteRecursively() }
+                                runCatching { context.codeCacheDir.deleteRecursively() }
+                                runCatching { webView.clearCache(true) }
+                                navigator.loadUrl("https://facebook.com/")
+                            }
+                        }
+                    ),
                     "SettingsBridge"
                 )
                 addJavascriptInterface(

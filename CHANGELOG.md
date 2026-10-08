@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.8] - 2026-10-08
+
+### Fixed
+- **Persistent Skeleton Freeze & V8 Bytecode Cache Purge**:
+  - Purged `context.codeCacheDir` (`/data/user/0/<pkg>/code_cache/`) alongside `context.cacheDir`. In Android OS "Clear cache", `installd` purges both `FLAG_CLEAR_CACHE_ONLY` and `FLAG_CLEAR_CODE_CACHE_ONLY`. Chromium stores precompiled V8 bytecode in `code_cache/web_view/js/`. Deleting both directories prevents V8 bytecode mismatch errors that halt React client hydration.
+  - Replaced `rememberSaveableWebViewState` with clean `rememberWebViewState` in Compose: prevented dead Chromium process bundles from being serialized into Android `savedInstanceState` and restored on cold starts.
+  - Exposed `cleanReload()` on `MaterialbookSettings` JavaScript bridge (`SettingsBridge.cleanReload()`).
+  - Connected the watchdog auto-recovery and the watchdog [Reload] button to `SettingsBridge.cleanReload()`, wiping `cacheDir` and `codeCacheDir` and loading a fresh URL instead of repeatedly replaying stale bytecode.
+  - Added clean cache reload to Settings menu Reload button.
+
+---
+
 ## [v1.3.7] - 2026-10-08
 
 ### Fixed

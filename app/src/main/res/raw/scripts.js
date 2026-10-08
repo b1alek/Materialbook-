@@ -663,10 +663,10 @@ observer.observe(document.body, { childList: true, subtree: true });
 
     const alreadyReloaded = sessionStorage.getItem(CIRCUIT_BREAKER_KEY) === 'true';
 
-    if (!alreadyReloaded) {
-      sessionStorage.setItem(CIRCUIT_BREAKER_KEY, 'true');
-      console.warn('Materialbook Watchdog: Feed skeleton stall detected. Executing single auto-recovery reload.');
-      if (window.caches && caches.keys) {
+    const triggerCleanReload = () => {
+      if (window.SettingsBridge && typeof window.SettingsBridge.cleanReload === 'function') {
+        window.SettingsBridge.cleanReload();
+      } else if (window.caches && caches.keys) {
         caches.keys().then((keys) => {
           return Promise.all(keys.map((k) => caches.delete(k)));
         }).finally(() => {
@@ -675,6 +675,12 @@ observer.observe(document.body, { childList: true, subtree: true });
       } else {
         window.location.reload();
       }
+    };
+
+    if (!alreadyReloaded) {
+      sessionStorage.setItem(CIRCUIT_BREAKER_KEY, 'true');
+      console.warn('Materialbook Watchdog: Feed skeleton stall detected. Executing single clean auto-recovery.');
+      triggerCleanReload();
     } else {
       if (document.getElementById('mbook-feed-recovery-banner')) return;
       const banner = document.createElement('div');
@@ -711,7 +717,7 @@ observer.observe(document.body, { childList: true, subtree: true });
       document.body.appendChild(banner);
       document.getElementById('mbook-feed-retry-btn')?.addEventListener('click', () => {
         sessionStorage.removeItem(CIRCUIT_BREAKER_KEY);
-        window.location.reload();
+        triggerCleanReload();
       });
     }
   };
