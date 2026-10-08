@@ -158,28 +158,39 @@
 // Enable native long-press text selection & restore "See more" expansion
 (() => {
   const selectionStyle = document.createElement('style');
-  selectionStyle.id = 'materialbook-text-selection-v3';
+  selectionStyle.id = 'materialbook-text-selection-v4';
   selectionStyle.textContent = `
-    /* Allow text selection across Facebook posts, comments, articles, and captions */
+    /* Post text, comments, articles, captions: fully selectable */
+    [role="article"],
+    article,
     div[dir="auto"],
     span[dir="auto"],
     p,
-    article,
-    [role="article"],
+    .story_body_container,
+    .story_body_container *,
+    [data-ad-preview="message"],
+    [data-ad-comet-preview="message"],
     .native-text,
-    [data-ad-preview="message"] {
+    [role="article"] div._5rgt,
+    [role="article"] span._5rgu,
+    [role="article"] div[data-mcomponent="MText"] {
       -webkit-user-select: text !important;
       user-select: text !important;
       -webkit-touch-callout: default !important;
     }
 
-    /* Restore button touch response for "See more", comments, reactions, and controls */
-    [role="button"],
+    /* Leaf interactive controls: non-selectable, instant tap response */
     button,
+    a,
+    [aria-haspopup="menu"],
+    [aria-haspopup="true"],
     [data-sigil*="more"],
     [data-action-id],
-    .native-text [role="button"],
-    div[dir="auto"] [role="button"],
+    [data-sigil*="popover"],
+    [data-sigil*="touchable"],
+    [aria-label*="opcj" i],
+    [aria-label*="option" i],
+    [aria-label*="action" i],
     nav [role="button"],
     header [role="button"],
     footer [role="button"] {
@@ -196,7 +207,7 @@
   `;
   document.head.appendChild(selectionStyle);
 
-  // Internationalized and structural check for "See more" / "Zobacz więcej" buttons
+  // Internationalized check for "See more" / "Zobacz więcej"
   const SEE_MORE_REGEX = /(\.{3}\s*)?(see more|zobacz więcej|pokaż więcej|see less|zobacz mniej|more|więcej)/i;
 
   const isSeeMoreElement = (el) => {
@@ -219,13 +230,21 @@
     const linkOrBtn = target.closest('a, button');
     if (linkOrBtn) return true;
 
+    // Options menu / overflow button ("...", "More options", "Więcej opcji", flyout, popover)
+    const optionsBtn = target.closest(
+      '[aria-haspopup="menu"], [aria-haspopup="true"], ' +
+      '[aria-label*="opcj" i], [aria-label*="option" i], [aria-label*="action" i], ' +
+      '[data-sigil*="popover"], [data-sigil*="flyout"]'
+    );
+    if (optionsBtn) return true;
+
     // ARIA buttons (excluding outer post card containers)
     const roleBtn = target.closest('[role="button"]');
     if (roleBtn) {
-      if (roleBtn.matches('[role="article"], [data-pagelet*="FeedUnit"], [data-ft]')) return false;
+      if (roleBtn.matches('[role="article"], [data-pagelet*="FeedUnit"]')) return false;
       const rect = roleBtn.getBoundingClientRect();
-      // Large cards are container wrappers, not leaf action buttons
-      if (rect.height > 120 && rect.width > 250) return false;
+      // Large cards are container wrappers (>120px tall AND >220px wide), not leaf action buttons
+      if (rect.height > 120 && rect.width > 220) return false;
       return true;
     }
 
@@ -237,25 +256,61 @@
     return Boolean(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
   };
 
-  // 1. Unblock Chromium long-press Gesture: Stop Facebook from calling e.preventDefault() on contextmenu
+  // Helper to expand caret position to word boundaries
+  const selectWordAtPoint = (x, y) => {
+    if (!document.caretRangeFromPoint) return false;
+    const range = document.caretRangeFromPoint(x, y);
+    if (!range || !range.startContainer) return false;
+    const node = range.startContainer;
+    if (node.nodeType !== Node.TEXT_NODE) return false;
+
+    const text = node.textContent;
+    const offset = range.startOffset;
+    let start = offset;
+    let end = offset;
+
+    while (start > 0 && /\S/.test(text[start - 1])) start--;
+    while (end < text.length && /\S/.test(text[end])) end++;
+
+    if (end > start) {
+      const wordRange = document.createRange();
+      wordRange.setStart(node, start);
+      wordRange.setEnd(node, end);
+      const sel = window.getSelection();
+      if (sel) {
+        sel.removeAllRanges();
+        sel.addRange(wordRange);
+        return true;
+      }
+    }
+    return false;
+  };
+
+  // 1. Long-press text selection: unblock contextmenu and ensure text selection triggers Android ActionMode
   window.addEventListener('contextmenu', (e) => {
     const target = e.target;
     if (!target) return;
 
-    // Ignore interactive controls, images, or form inputs
     if (isInteractiveLeaf(target) || target.closest('img, video, input, textarea')) {
       return;
     }
 
-    const isTextContainer = target.closest('div[dir="auto"], span[dir="auto"], p, article, [role="article"], .native-text');
+    const isTextContainer = target.closest(
+      'div[dir="auto"], span[dir="auto"], p, article, [role="article"], ' +
+      '.native-text, .story_body_container, [data-ad-preview="message"]'
+    );
     if (isTextContainer) {
-      // Stopping propagation prevents Facebook's listener from executing event.preventDefault().
-      // Chromium sees that contextmenu was not canceled, creating word selection and triggering Android ActionMode!
+      // Prevent Facebook from canceling native selection
       e.stopImmediatePropagation();
+
+      // If Chromium did not select word automatically, select it programmatically to activate Android ActionMode
+      if (!hasActiveSelection()) {
+        selectWordAtPoint(e.clientX, e.clientY);
+      }
     }
   }, true);
 
-  // 2. Safe click handling: allow "See more", reactions, and comments through; suppress accidental card navigation during text selection
+  // 2. Safe click handling: allow buttons through; clear selections on button taps; prevent card navigation during text selection
   document.addEventListener('click', (e) => {
     const interactive = isInteractiveLeaf(e.target);
 
@@ -264,10 +319,10 @@
         const sel = window.getSelection();
         if (sel) sel.removeAllRanges();
       }
-      return; // Do NOT stop propagation - allow Facebook to process the button click!
+      return; // Allow Facebook to process button clicks (See more, three dots, reactions, comments)
     }
 
-    // If user has highlighted text and accidentally releases finger on card background, prevent navigating away
+    // Suppress card navigation only when the user is actively selecting text
     if (hasActiveSelection()) {
       e.stopPropagation();
     }

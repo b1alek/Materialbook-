@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.5] - 2026-10-08
+
+### Fixed
+- **Post Options (...) Button Responsiveness**:
+  - Restored the three-dots options button (`aria-haspopup="menu"`, `aria-label*="opcj"`, `data-sigil*="popover"`) used for saving posts, hiding content, and managing posts.
+  - Removed `[data-ft]` from container exclusions in `scripts.js`: Facebook mobile attaches tracking attribute `data-ft` to leaf buttons as well as cards, which previously caused the options button to be misclassified as a card container.
+- **Native Android ActionMode Text Selection Activation**:
+  - Extended CSS text selection rules to cover Facebook mobile post body containers (`.story_body_container`, `div._5rgt`, `span._5rgu`), overcoming inherited `user-select: none`.
+  - Added synthetic word selection on long-press (`caretRangeFromPoint`), notifying Android WebView's `SelectionPopupController` to display the native floating action bar (Kopiuj / Udostępnij / Zaznacz wszystko).
+
+---
+
 ## [v1.3.4] - 2026-10-08
 
 ### Fixed
