@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.3.6] - 2026-10-08
+
+### Fixed
+- **Reels & Video Playback Responsiveness**:
+  - Restored click-to-play and toggle playback on Facebook Reels and video posts.
+  - Implemented dedicated `isMediaElement` detector recognizing `<video>`, `<audio>`, Facebook video sigils (`data-sigil*="video"`, `data-sigil*="play"`), `data-mcomponent="VideoArea"`, and media ARIA labels.
+  - Added immediate media bypass in capture-phase click handler: clicks on video elements and overlays are never suppressed by text selection guards.
+  - Enforced `user-select: none !important; touch-action: manipulation !important` on video elements and playback overlays, preventing Blink from prioritizing text selection gestures over video taps.
+  - Cleared lingering text selections automatically when tapping video surfaces.
+
+---
+
 ## [v1.3.5] - 2026-10-08
 
 ### Fixed
