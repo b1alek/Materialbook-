@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -79,16 +81,60 @@ jobs:
 
           sha256sum "$OUTPUT_APK" > "${OUTPUT_APK}.sha256"
           
-          cat << EOF > release_notes.txt
-          ### Materialbook Fork Release (${TAG_NAME})
-          * Built from commit: ${{ github.sha }}
-          * Includes upstream \`main\` updates and PR #43 (Desktop Messages mode).
+          # 1. Extract release notes from CHANGELOG.md for the current tag
+          CHANGELOG_EXTRACT=$(python3 -c "
+import re, sys
+try:
+    with open('CHANGELOG.md', 'r') as f:
+        content = f.read()
+    pattern = r'## \[(.*?)\][^\n]*\n(.*?)(?=\n## \[|\Z)'
+    matches = list(re.finditer(pattern, content, re.DOTALL))
+    for m in matches:
+        ver = m.group(1).strip()
+        tag = '${TAG_NAME}'.lstrip('v').rstrip('-fork')
+        if ver.lstrip('v') == tag or ver in '${TAG_NAME}':
+            print(m.group(2).strip())
+            sys.exit(0)
+    if matches:
+        print(matches[0].group(2).strip())
+except Exception as e:
+    pass
+" 2>/dev/null || true)
 
-          **SHA-256 Checksum:**
-          \`\`\`
-          $(cat "${OUTPUT_APK}.sha256")
-          \`\`\`
-          EOF
+          # 2. Compute git commit log diff from previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 "${TAG_NAME}^" 2>/dev/null || git describe --tags --abbrev=0 HEAD^ 2>/dev/null || true)
+          if [ -n "$PREV_TAG" ]; then
+            COMMIT_DIFF=$(git log --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H))" "${PREV_TAG}..HEAD")
+            DIFF_HEADER="### Changes since ${PREV_TAG}"
+          else
+            COMMIT_DIFF=$(git log -n 10 --pretty=format:"* %s ([%h](https://github.com/${{ github.repository }}/commit/%H))")
+            DIFF_HEADER="### Recent Changes"
+          fi
+
+          cat << EOF > release_notes.txt
+### Materialbook Fork Release (${TAG_NAME})
+* **Commit:** [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+* **Assets:** \`${OUTPUT_APK}\`
+
+EOF
+
+          if [ -n "$CHANGELOG_EXTRACT" ]; then
+            cat << EOF >> release_notes.txt
+${CHANGELOG_EXTRACT}
+
+EOF
+          fi
+
+          cat << EOF >> release_notes.txt
+${DIFF_HEADER}
+${COMMIT_DIFF}
+
+---
+**SHA-256 Checksum:**
+\`\`\`
+$(cat "${OUTPUT_APK}.sha256")
+\`\`\`
+EOF
 
           echo "apk_path=$OUTPUT_APK" >> "$GITHUB_OUTPUT"
           echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
