@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.4.0] - 2026-10-08
+
+### Fixed
+- **Mobile Landscape Feed Centering & Header Realignment**:
+  - Fixed mobile layout disconnection in landscape mode where headers floated in the center while feed posts remained pinned to `x = 0` (left edge) with a large black void on the right.
+  - Removed faulty `max-width: 1000px` media query constraint in `scripts.js` that caused landscape CSS to be ignored on high-density displays (e.g. 1024px+).
+  - Applied flexbox centering to `body`, `#root`, and `div[data-type="vscroller"]` under `@media (orientation: landscape)`.
+  - Replaced volatile `[data-is-pull-to-refresh-allowed="true"]` scroller selector in `sticky_navbar.js` with persistent `div[data-type="vscroller"]`, ensuring the scroller container continues to be tracked and centered when the user scrolls down into the feed.
+  - Aligned header max-width and feed scroller max-width to 600px, expanding media and video containers to fill the centered column.
+
+---
+
 ## [v1.3.9] - 2026-10-08
 
 ### Fixed

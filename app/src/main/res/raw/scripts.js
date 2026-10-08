@@ -498,23 +498,42 @@ observer.observe(document.body, { childList: true, subtree: true });
   const style = document.createElement('style');
   style.id = 'materialbook-responsive-landscape';
   style.textContent = `
-    @media (orientation: landscape) and (max-width: 1000px) {
+    @media (orientation: landscape) {
       /* Only target mobile layout, never desktop mode */
-      html:not([id="facebook"]) body > #root,
-      html:not([id="facebook"]) body > div:not([id]),
-      html:not([id="facebook"]) div[data-type="vscroller"],
-      html:not([id="facebook"]) #root > div:only-child {
-        max-width: 560px !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+      html:not([id="facebook"]) body {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
         width: 100% !important;
       }
+
+      html:not([id="facebook"]) body > #root,
+      html:not([id="facebook"]) body > div,
+      html:not([id="facebook"]) #root,
+      html:not([id="facebook"]) #root > div,
+      html:not([id="facebook"]) div[data-type="vscroller"],
+      html:not([id="facebook"]) div[data-type="vscroller"] > div {
+        max-width: 600px !important;
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+      }
+
       /* Center fixed top navigation safely */
       html:not([id="facebook"]) div[data-tti-phase="-1"][data-mcomponent="MContainer"][data-type="container"][data-focusable="true"].m,
       html:not([id="facebook"]) div[role="tablist"][data-tti-phase="-1"][data-type="container"][data-mcomponent="MContainer"].m {
         left: 50% !important;
+        right: auto !important;
         transform: translateX(-50%) !important;
-        max-width: 560px !important;
+        max-width: 600px !important;
+        width: 100% !important;
+      }
+
+      /* Ensure cards and video containers expand within the 600px column */
+      html:not([id="facebook"]) div[data-tracking-duration-id],
+      html:not([id="facebook"]) div[data-mcomponent="VideoArea"],
+      html:not([id="facebook"]) div[data-mcomponent="MVideo"] {
+        max-width: 100% !important;
         width: 100% !important;
       }
     }

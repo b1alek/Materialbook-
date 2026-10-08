@@ -57,7 +57,7 @@
     const applyStyles = () => {
         const navbar = document.querySelector('div[data-tti-phase="-1"][data-mcomponent="MContainer"][data-type="container"][data-focusable="true"].m');
         const tabbar = document.querySelector('div[role="tablist"][data-tti-phase="-1"][data-type="container"][data-mcomponent="MContainer"].m');
-        const scroller = document.querySelector('div[data-type="vscroller"][data-is-pull-to-refresh-allowed="true"]');
+        const scroller = document.querySelector('div[data-type="vscroller"]');
 
         const hasLogo = navbar?.querySelector('div[aria-label*="Facebook"]');
         const hasFeed = tabbar?.querySelector('div[aria-label*="feed"]');
@@ -66,7 +66,7 @@
         const tabbarHeight = tabbar ? parseFloat(getComputedStyle(tabbar).height) || parseFloat(tabbar.style.height) || 0 : 0;
 
         const isLandscape = window.innerWidth > window.innerHeight;
-        const maxHeaderWidth = isLandscape ? '560px' : '100%';
+        const maxHeaderWidth = isLandscape ? '600px' : '100%';
         const headerLeft = isLandscape ? '50%' : '0';
         const headerTransform = isLandscape ? 'translateX(-50%)' : 'none';
 
@@ -94,13 +94,27 @@
 
         if (scroller) {
             if (isLandscape) {
-                scroller.style.maxWidth = '560px';
+                scroller.style.maxWidth = '600px';
+                scroller.style.width = '100%';
                 scroller.style.marginLeft = 'auto';
                 scroller.style.marginRight = 'auto';
+                if (scroller.parentElement) {
+                    scroller.parentElement.style.display = 'flex';
+                    scroller.parentElement.style.flexDirection = 'column';
+                    scroller.parentElement.style.alignItems = 'center';
+                    scroller.parentElement.style.width = '100%';
+                }
             } else {
                 scroller.style.maxWidth = '';
+                scroller.style.width = '';
                 scroller.style.marginLeft = '';
                 scroller.style.marginRight = '';
+                if (scroller.parentElement) {
+                    scroller.parentElement.style.display = '';
+                    scroller.parentElement.style.flexDirection = '';
+                    scroller.parentElement.style.alignItems = '';
+                    scroller.parentElement.style.width = '';
+                }
             }
 
             const offset = (hasLogo ? navbarHeight : 0) + (hasFeed ? tabbarHeight : 0);
