@@ -155,12 +155,12 @@
     }
 })();
 
-// Enable press and hold text selection, captions, comments, and copy context menu
+// Enable press and hold text selection while preserving "See more" and interactive buttons
 (() => {
   const selectionStyle = document.createElement('style');
   selectionStyle.id = 'materialbook-text-selection-style';
   selectionStyle.textContent = `
-    /* Force text selection across Facebook posts, comments, articles, and captions */
+    /* Allow text selection across Facebook posts, comments, articles, and captions */
     div[dir="auto"],
     span[dir="auto"],
     p,
@@ -173,6 +173,20 @@
       -webkit-touch-callout: default !important;
     }
 
+    /* Restore button touch response for "See more", comments, reactions, and controls inside text */
+    [dir="auto"] [role="button"],
+    [dir="auto"] [role="button"] *,
+    [dir="auto"] button,
+    [dir="auto"] button *,
+    nav [role="button"],
+    header [role="button"],
+    footer [role="button"] {
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      touch-action: manipulation !important;
+      cursor: pointer !important;
+    }
+
     ::selection {
       background: #3b5998 !important;
       color: #ffffff !important;
@@ -180,23 +194,46 @@
   `;
   document.head.appendChild(selectionStyle);
 
-  // Prevent card click navigation from hijacking text selection / drag gestures
-  let isSelecting = false;
-  document.addEventListener('selectstart', () => {
-    isSelecting = true;
-  }, { capture: true, passive: true });
+  // Helper to distinguish leaf interactive buttons ("See more", Like, Comment)
+  // from outer card wrapper containers that also use role="button".
+  const getLeafInteractive = (target) => {
+    if (!target || target === document.body || target === document.documentElement) return null;
+    const candidate = target.closest('button, [role="button"]');
+    if (!candidate) return null;
 
-  document.addEventListener('selectionchange', () => {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-      isSelecting = false;
+    // Discard outer feed unit cards or article wrappers
+    if (candidate.matches('[role="article"], [data-pagelet*="FeedUnit"], [data-ft]')) return null;
+
+    // A leaf button does not have nested buttons inside it. Outer post cards contain child buttons.
+    if (candidate.getAttribute('role') === 'button') {
+      const nestedBtn = candidate.querySelector('button, [role="button"]');
+      if (nestedBtn && nestedBtn !== candidate) {
+        return null; // Outer card container
+      }
     }
-  }, { passive: true });
+    return candidate;
+  };
 
-  document.addEventListener('click', (e) => {
+  const hasActiveSelection = () => {
     const sel = window.getSelection();
-    if (sel && !sel.isCollapsed && sel.toString().trim().length > 0) {
-      // User has selected text; suppress accidental navigation click
+    return Boolean(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
+  };
+
+  // Intercept clicks in capture phase: allow leaf buttons through, suppress card click only on active text selection
+  document.addEventListener('click', (e) => {
+    const leaf = getLeafInteractive(e.target);
+    if (leaf) {
+      // Leaf button tapped ("See more", reaction, comment expansion).
+      // If user had active text selection, clear it so it doesn't linger, and allow the button click to proceed!
+      if (hasActiveSelection()) {
+        const sel = window.getSelection();
+        if (sel) sel.removeAllRanges();
+      }
+      return; // Do NOT stop propagation
+    }
+
+    // If tapping plain post body text while selection is active, suppress accidental card navigation
+    if (hasActiveSelection()) {
       e.stopPropagation();
     }
   }, { capture: true });
