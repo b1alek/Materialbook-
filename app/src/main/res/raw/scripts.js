@@ -290,6 +290,14 @@
       cursor: pointer !important;
     }
 
+    .inline-video-icon.play,
+    .ssr #screen-root .inline-video-icon.play {
+      z-index: 10 !important;
+      opacity: 1 !important;
+      visibility: visible !important;
+      pointer-events: auto !important;
+    }
+
     /* Leaf interactive controls: non-selectable, instant tap response */
     .ssr #screen-root button,
     .ssr #screen-root a,
@@ -580,14 +588,16 @@
             soundBtn.classList.add('sound-off');
             soundBtn.setAttribute('aria-pressed', 'true');
           }
+          const playBtn = targetMVideo.querySelector('button.inline-video-icon.play, button.inline-video-icon, [data-sigil*="play"], [aria-label*="Play video" i]');
           const posterImg = targetMVideo.querySelector('img.img');
           if (targetVideo.paused) {
             targetVideo.play();
-            if (clickedBtn) clickedBtn.style.display = 'none';
+            if (playBtn) playBtn.style.display = 'none';
             if (posterImg) posterImg.style.display = 'none';
           } else {
             targetVideo.pause();
-            if (clickedBtn) clickedBtn.style.display = 'block';
+            if (playBtn) playBtn.style.display = 'block';
+            if (posterImg) posterImg.style.display = 'block';
           }
         }
       }
@@ -618,8 +628,33 @@
         e.target.defaultMuted = true;
         e.target.setAttribute('muted', '');
       }
+      const container = e.target.closest('[data-mcomponent="MVideo"], [data-video-url]');
+      if (container) {
+        const pBtn = container.querySelector('button.inline-video-icon.play, [data-sigil*="play"]');
+        if (pBtn) pBtn.style.display = 'none';
+      }
     }
   }, true);
+
+  // 4. Restore play button and thumbnail poster when video pauses or finishes
+  const onVideoPauseOrEnd = (e) => {
+    if (e.target && e.target.tagName === 'VIDEO') {
+      const container = e.target.closest('[data-mcomponent="MVideo"], [data-video-url]');
+      if (container) {
+        const pBtn = container.querySelector('button.inline-video-icon.play, button.inline-video-icon, [data-sigil*="play"], [aria-label*="Play video" i]');
+        if (pBtn) {
+          pBtn.style.display = 'block';
+          pBtn.classList.remove('hidden');
+        }
+        const posterImg = container.querySelector('img.img');
+        if (posterImg) {
+          posterImg.style.display = 'block';
+        }
+      }
+    }
+  };
+  document.addEventListener('pause', onVideoPauseOrEnd, true);
+  document.addEventListener('ended', onVideoPauseOrEnd, true);
 })();
 
 // Enhance Loading Overlay Script (Prevent click blocking & freezing)
