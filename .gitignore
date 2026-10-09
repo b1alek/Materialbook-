@@ -20,3 +20,5 @@ local.properties
 *.txt
 keystore*
 tasks/
+*cookies*
+*.db

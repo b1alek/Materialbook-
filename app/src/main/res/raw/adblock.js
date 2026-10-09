@@ -83,9 +83,9 @@
                 container.dataset.adHidden = 'true';
                 container.style.display = 'none';
 
-                // Hide separator/gap preceding the post
+                // Hide separator/gap preceding the post (never hide an adjacent post container!)
                 const postSeparator = container.previousElementSibling;
-                if (postSeparator && (postSeparator.offsetHeight <= 8 || postSeparator.querySelector('[data-fd-action]'))) {
+                if (postSeparator && !postSeparator.hasAttribute('data-tracking-duration-id') && (postSeparator.offsetHeight <= 8 || postSeparator.querySelector('[data-fd-action]'))) {
                     postSeparator.style.display = 'none';
                 }
             }

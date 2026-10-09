@@ -234,6 +234,9 @@ fun MaterialbookWebView(
                 navigator.evaluateJavaScript(scripts) {
                     isLoading = false
                 }
+            } ?: run {
+                delay(1500)
+                isLoading = false
             }
         }
     }

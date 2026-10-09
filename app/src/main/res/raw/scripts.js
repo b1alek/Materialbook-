@@ -157,30 +157,112 @@
 
 // Enable native long-press text selection & restore "See more" expansion
 (() => {
+  // Strip .unselectable class dynamically added by Facebook (Keep .ssr intact so Facebook's CSS layout and image sizing work!)
+  const stripBlockingClasses = () => {
+    if (document.documentElement) {
+      if (document.documentElement.classList.contains('unselectable')) {
+        document.documentElement.classList.remove('unselectable');
+      }
+    }
+  };
+  stripBlockingClasses();
+  if (document.documentElement && window.MutationObserver) {
+    const rootObs = new MutationObserver(() => stripBlockingClasses());
+    rootObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  }
+
   const selectionStyle = document.createElement('style');
-  selectionStyle.id = 'materialbook-text-selection-v5';
+  selectionStyle.id = 'materialbook-text-selection-v6';
   selectionStyle.textContent = `
-    /* Post text, comments, articles, captions: fully selectable */
+    /* Guarantee core image layout even if .ssr class is momentarily absent */
+    .img {
+      position: absolute !important;
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .contain {
+      object-fit: contain !important;
+    }
+    .cover {
+      object-fit: cover !important;
+    }
+    .stretch {
+      object-fit: fill !important;
+    }
+    .m {
+      position: relative;
+    }
+
+    /* Post text, comments, articles, captions, feed units, and text containers: fully selectable */
+    .ssr #screen-root div[dir="auto"],
+    .ssr #screen-root span[dir="auto"],
+    .ssr #screen-root p,
+    .ssr #screen-root article,
+    .ssr #screen-root [role="article"],
+    .ssr #screen-root [role="article"] div,
+    .ssr #screen-root [role="article"] span,
+    .ssr #screen-root .story_body_container,
+    .ssr #screen-root .story_body_container div,
+    .ssr #screen-root .story_body_container span,
+    .ssr #screen-root [data-ad-preview="message"],
+    .ssr #screen-root [data-ad-comet-preview="message"],
+    .ssr #screen-root .native-text,
+    .ssr #screen-root span.f4,
+    .ssr #screen-root span.f5,
+    .ssr #screen-root div._5rgt,
+    .ssr #screen-root span._5rgu,
+    .ssr #screen-root div[data-mcomponent="MText"],
+    .ssr #screen-root div[data-mcomponent="MText"] *,
+    .ssr #screen-root div[data-mcomponent="ServerTextArea"],
+    .ssr #screen-root div[data-mcomponent="ServerTextArea"] *,
     div[dir="auto"],
     span[dir="auto"],
     p,
     article,
-    [role="article"] div[dir="auto"],
-    [role="article"] span[dir="auto"],
-    .story_body_container div[dir="auto"],
-    .story_body_container span[dir="auto"],
-    [data-ad-preview="message"],
-    [data-ad-comet-preview="message"],
+    [role="article"],
+    .story_body_container,
     .native-text,
-    [role="article"] div._5rgt,
-    [role="article"] span._5rgu,
-    [role="article"] div[data-mcomponent="MText"] {
+    span.f4,
+    span.f5,
+    div._5rgt,
+    span._5rgu,
+    div[data-mcomponent="MText"],
+    div[data-mcomponent="ServerTextArea"],
+    html.unselectable div.m,
+    html.unselectable span,
+    html.unselectable p {
       -webkit-user-select: text !important;
       user-select: text !important;
+      pointer-events: auto !important;
       -webkit-touch-callout: default !important;
     }
 
+    /* Keep decorative post background images from stealing touch events */
+    div[data-mcomponent="ServerTextArea"] {
+      position: relative !important;
+      z-index: 10 !important;
+    }
+
+    div[data-mcomponent="ServerImageArea"],
+    div[data-mcomponent="ServerImageArea"] * {
+      pointer-events: none !important;
+    }
+
     /* Media elements, videos, reels, and player overlays: non-selectable, instant tap response */
+    .ssr #screen-root video,
+    .ssr #screen-root audio,
+    .ssr #screen-root [data-sigil*="video"],
+    .ssr #screen-root [data-sigil*="play"],
+    .ssr #screen-root [data-mcomponent="VideoArea"],
+    .ssr #screen-root [data-mcomponent="VideoArea"] *,
+    .ssr #screen-root [data-mcomponent="MVideo"],
+    .ssr #screen-root [data-mcomponent="MVideo"] *,
+    .ssr #screen-root [data-video-id],
+    .ssr #screen-root [data-pagelet*="Video"],
+    .ssr #screen-root [data-pagelet*="Reel"],
+    .ssr #screen-root .inline-video-icon,
+    .ssr #screen-root .inline-video-container,
+    .ssr #screen-root .inline-video-container *,
     video,
     audio,
     [data-sigil*="video"],
@@ -190,6 +272,8 @@
     [data-video-id],
     [data-pagelet*="Video"],
     [data-pagelet*="Reel"],
+    .inline-video-icon,
+    .inline-video-container,
     [aria-label*="play" i],
     [aria-label*="odtwórz" i],
     [aria-label*="odtwarz" i],
@@ -207,6 +291,11 @@
     }
 
     /* Leaf interactive controls: non-selectable, instant tap response */
+    .ssr #screen-root button,
+    .ssr #screen-root a,
+    .ssr #screen-root [role="button"],
+    .ssr #screen-root [aria-haspopup="menu"],
+    .ssr #screen-root [aria-haspopup="true"],
     button,
     a,
     [aria-haspopup="menu"],
@@ -225,6 +314,13 @@
       user-select: none !important;
       touch-action: manipulation !important;
       cursor: pointer !important;
+    }
+
+    /* Elevate top navigation and header controls above full-screen multi-view overlays */
+    .ssr #screen-root .fixed-container:not([style*="height:838px"]):not([style*="height: 838px"]),
+    .ssr #screen-root div[role="button"][aria-label*="Back" i],
+    .ssr #screen-root div[role="button"][aria-label*="Wstecz" i] {
+      z-index: 99 !important;
     }
 
     ::selection {
@@ -320,19 +416,82 @@
     return Boolean(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
   };
 
+  // Robust text node discovery supporting element containers and deep text branches
+  const getTextNodeAtPoint = (x, y) => {
+    if (document.caretRangeFromPoint) {
+      const range = document.caretRangeFromPoint(x, y);
+      if (range && range.startContainer) {
+        let node = range.startContainer;
+        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim().length > 0) {
+          return { node, offset: range.startOffset };
+        }
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+          let curr;
+          while ((curr = walker.nextNode())) {
+            if (curr.textContent && curr.textContent.trim().length > 0) {
+              const r = document.createRange();
+              r.selectNodeContents(curr);
+              const rect = r.getBoundingClientRect();
+              if (y >= rect.top - 15 && y <= rect.bottom + 15 && x >= rect.left - 15 && x <= rect.right + 15) {
+                return { node: curr, offset: 0 };
+              }
+            }
+          }
+          const walker2 = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+          let first;
+          while ((first = walker2.nextNode())) {
+            if (first.textContent && first.textContent.trim().length > 0) {
+              return { node: first, offset: 0 };
+            }
+          }
+        }
+      }
+    }
+    const el = document.elementFromPoint(x, y);
+    if (el) {
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+      let bestNode = null;
+      let curr;
+      while ((curr = walker.nextNode())) {
+        if (curr.textContent && curr.textContent.trim().length > 0) {
+          const r = document.createRange();
+          r.selectNodeContents(curr);
+          const rect = r.getBoundingClientRect();
+          if (y >= rect.top - 15 && y <= rect.bottom + 15 && x >= rect.left - 15 && x <= rect.right + 15) {
+            return { node: curr, offset: 0 };
+          }
+          if (!bestNode) bestNode = curr;
+        }
+      }
+      if (bestNode) return { node: bestNode, offset: 0 };
+    }
+    return null;
+  };
+
   // Helper to expand caret position to word boundaries
   const selectWordAtPoint = (x, y) => {
-    if (!document.caretRangeFromPoint) return false;
-    const range = document.caretRangeFromPoint(x, y);
-    if (!range || !range.startContainer) return false;
-    const node = range.startContainer;
-    if (node.nodeType !== Node.TEXT_NODE) return false;
-
+    const targetInfo = getTextNodeAtPoint(x, y);
+    if (!targetInfo || !targetInfo.node) return false;
+    const node = targetInfo.node;
     const text = node.textContent;
-    const offset = range.startOffset;
+    let offset = targetInfo.offset || 0;
+    if (offset >= text.length) offset = Math.max(0, text.length - 1);
+
+    if (/\s/.test(text[offset])) {
+      let forward = offset;
+      while (forward < text.length && /\s/.test(text[forward])) forward++;
+      if (forward < text.length) {
+        offset = forward;
+      } else {
+        let backward = offset;
+        while (backward > 0 && /\s/.test(text[backward])) backward--;
+        offset = backward;
+      }
+    }
+
     let start = offset;
     let end = offset;
-
     while (start > 0 && /\S/.test(text[start - 1])) start--;
     while (end < text.length && /\S/.test(text[end])) end++;
 
@@ -355,14 +514,20 @@
     const target = e.target;
     if (!target) return;
 
-    if (isMediaElement(target) || isInteractiveLeaf(target) || target.closest('img, video, audio, input, textarea')) {
+    if (isMediaElement(target) || isInteractiveLeaf(target) || target.closest('video, audio, input, textarea')) {
+      return;
+    }
+
+    if (target.closest('img') && !target.closest('[data-mcomponent="ServerImageArea"], [data-mcomponent="ServerTextArea"], div.m')) {
       return;
     }
 
     const isTextContainer = target.closest(
       'div[dir="auto"], span[dir="auto"], p, article, [role="article"], ' +
-      '.native-text, .story_body_container, [data-ad-preview="message"]'
-    );
+      '.native-text, .story_body_container, [data-ad-preview="message"], ' +
+      'div.m, span.f4, span.f5, div[data-mcomponent="MText"], div[data-mcomponent="ServerTextArea"]'
+    ) || (target.textContent && target.textContent.trim().length > 0);
+
     if (isTextContainer) {
       if (isMediaElement(target)) return;
 
@@ -378,11 +543,53 @@
 
   // 2. Safe click handling: allow buttons & media through; clear selections on interactive taps; prevent card navigation during text selection
   document.addEventListener('click', (e) => {
-    // Media / video playback: never intercept or block clicks
+    // Media / video playback: start stream and manage play icon
     if (isMediaElement(e.target)) {
       if (hasActiveSelection()) {
         const sel = window.getSelection();
         if (sel) sel.removeAllRanges();
+      }
+
+      // If tapping play button or video container, ensure underlying video stream plays
+      const clickedBtn = e.target.closest('button.inline-video-icon, [data-sigil*="play"], [aria-label*="Play video" i]');
+      const videoContainer = e.target.closest('[data-video-url], [data-mcomponent="MVideo"]');
+      if (clickedBtn || videoContainer) {
+        const targetMVideo = videoContainer || (clickedBtn ? clickedBtn.closest('[data-video-url], [data-mcomponent="MVideo"]') : null);
+        const streamUrl = targetMVideo ? (targetMVideo.getAttribute('data-video-url') || (targetMVideo.dataset && targetMVideo.dataset.videoUrl)) : null;
+        if (targetMVideo && streamUrl) {
+          let targetVideo = targetMVideo.querySelector('video');
+          if (!targetVideo) {
+            targetVideo = document.createElement('video');
+            targetVideo.style.position = 'absolute';
+            targetVideo.style.objectFit = 'cover';
+            targetVideo.style.width = '100%';
+            targetVideo.style.height = '100%';
+            targetVideo.setAttribute('playsinline', '');
+            targetVideo.setAttribute('webkit-playsinline', '');
+            targetMVideo.appendChild(targetVideo);
+          }
+          if (!targetVideo.src || targetVideo.src === window.location.href) {
+            targetVideo.src = streamUrl;
+          }
+          targetVideo.muted = true;
+          targetVideo.defaultMuted = true;
+          targetVideo.setAttribute('muted', '');
+          const soundBtn = targetMVideo.querySelector('button.sound');
+          if (soundBtn) {
+            soundBtn.classList.remove('sound-on');
+            soundBtn.classList.add('sound-off');
+            soundBtn.setAttribute('aria-pressed', 'true');
+          }
+          const posterImg = targetMVideo.querySelector('img.img');
+          if (targetVideo.paused) {
+            targetVideo.play();
+            if (clickedBtn) clickedBtn.style.display = 'none';
+            if (posterImg) posterImg.style.display = 'none';
+          } else {
+            targetVideo.pause();
+            if (clickedBtn) clickedBtn.style.display = 'block';
+          }
+        }
       }
       return;
     }
@@ -397,19 +604,31 @@
       return; // Allow Facebook to process button clicks (See more, three dots, reactions, comments)
     }
 
-    // Suppress card navigation only when the user is actively selecting text
+  // Suppress card navigation only when the user is actively selecting text
     if (hasActiveSelection()) {
       e.stopPropagation();
     }
   }, true);
+
+  // 3. Guarantee all media starts muted by default
+  document.addEventListener('play', (e) => {
+    if (e.target && e.target.tagName === 'VIDEO') {
+      if (!e.target.__user_unmuted) {
+        e.target.muted = true;
+        e.target.defaultMuted = true;
+        e.target.setAttribute('muted', '');
+      }
+    }
+  }, true);
 })();
 
-// Enhance Loading Overlay Script
+// Enhance Loading Overlay Script (Prevent click blocking & freezing)
 (function() {
     function applyOverlayStyle() {
-        const overlays = document.querySelectorAll('.loading-overlay');
+        const overlays = document.querySelectorAll('.loading-overlay, .loading-overlay-background');
         overlays.forEach(overlay => {
             overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.1)';
+            overlay.style.pointerEvents = 'none';
         });
     }
     applyOverlayStyle();
@@ -421,24 +640,116 @@
         });
     });
 
-    observer.observe(document.body, {
+    observer.observe(document.body || document.documentElement, {
         childList: true,
         subtree: true
     });
 })();
 
+// Resilient Section Navigation Fallback for Mobile Web Tabs
+(function() {
+    const tabRoutes = {
+        'marketplace': 'https://m.facebook.com/marketplace/',
+        'messages': 'https://m.facebook.com/messages/'
+    };
+
+    document.addEventListener('click', (e) => {
+        const tab = e.target.closest?.('[role="tab"]');
+        if (!tab) return;
+        const label = (tab.getAttribute('aria-label') || '').toLowerCase();
+        for (const [key, url] of Object.entries(tabRoutes)) {
+            if (label.includes(key)) {
+                // If it's marketplace, native WebBloks handler fails to trigger navigation on mobile web
+                if (key === 'marketplace') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    window.location.href = url;
+                }
+                break;
+            }
+        }
+    }, true);
+})();
+
+// Auto-dismiss cookie consent banner (Primary: Allow all cookies, Fallback: Decline optional cookies)
+(function() {
+  let cookieHandled = false;
+  function handleCookieConsent() {
+    if (cookieHandled) return;
+    const buttons = Array.from(document.querySelectorAll('button, [role="button"], a[role="button"]'));
+    const allowBtn = buttons.find(b => {
+      const t = (b.textContent || b.getAttribute('aria-label') || '').trim().toLowerCase();
+      return t.includes('allow all cookies') || t.includes('zezwól na wszystkie') || t.includes('accept all');
+    });
+    const declineBtn = buttons.find(b => {
+      const t = (b.textContent || b.getAttribute('aria-label') || '').trim().toLowerCase();
+      return t.includes('decline optional cookies') || t.includes('odrzuć opcjonalne') || t.includes('only essential');
+    });
+    const target = allowBtn || declineBtn;
+    if (target && target.offsetParent !== null) {
+      cookieHandled = true;
+      target.click();
+    }
+  }
+
+  handleCookieConsent();
+  new MutationObserver(() => {
+    if (!cookieHandled) handleCookieConsent();
+  }).observe(document.documentElement || document.body, { childList: true, subtree: true });
+})();
+
 // Hide facebook download button and other distractions at login page
 (function() {
   function removeDistr() {
-    document.querySelector('div[data-bloks-name="bk.components.Flexbox"][style*="background: rgb(255, 255, 255)"].wbloks_1')?.parentElement?.remove();
-
+    // 1. Bloks-based distracting banners (collapse with display: none, NEVER remove() to prevent breaking React/Bloks tree)
     document.querySelectorAll(
+      'div[style*="padding: 10px 12px"][style*="background: rgb(255, 255, 255)"],' +
+      'div[style*="padding: 10px 12px"][style*="background:#000000"],' +
+      'div[style*="padding: 10px 12px"][style*="background: #000000"],' +
       'div[data-bloks-name="bk.components.Flexbox"][style*="padding-top: 20px; padding-bottom: 20px"],' +
       'div[data-bloks-name="bk.components.Flexbox"][style*="padding-left: 4px; padding-right: 4px; padding-bottom: 4px"],' +
-      'div[data-bloks-name="bk.components.Flexbox"][style*="padding: 10px 12px; background: rgb(255, 255, 255)"],' +
+      'div[data-bloks-name="bk.components.Flexbox"][style*="padding: 10px 12px"],' +
       'div[data-bloks-name="bk.components.Flexbox"][style*="padding: 20px"]'
-    )?.forEach(distr => distr.remove());
+    )?.forEach(distr => {
+      distr.style.setProperty('display', 'none', 'important');
+    });
+
+    // 2. Hide 'Get Facebook for Android and browse faster' / App install promo banner
+    const promoKeywords = ['Get Facebook for Android', 'browse faster', 'Pobierz Facebooka na Androida', 'szybciej przeglądać'];
+    const allLeaves = document.querySelectorAll('span, a, p, div');
+    for (const el of allLeaves) {
+      if (el.children.length === 0) {
+        const text = el.textContent || '';
+        if (promoKeywords.some(kw => text.includes(kw))) {
+          // Walk up to find the banner container (height < 100px), never touching header, body or root containers
+          let curr = el;
+          while (curr && curr.parentElement && curr.parentElement !== document.body && curr.parentElement.id !== 'root' && curr.parentElement.getBoundingClientRect().height < 100) {
+            curr = curr.parentElement;
+          }
+          if (curr && curr !== document.body && curr.id !== 'root') {
+            curr.style.setProperty('display', 'none', 'important');
+          }
+        }
+      }
+    }
   }
+
+  // Also inject a pure CSS rule so banner never flickers on screen
+  try {
+    const styleId = 'materialbook-login-promo-hide';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        div[style*="padding: 10px 12px"][style*="background: rgb(255, 255, 255)"],
+        div[style*="padding: 10px 12px"][style*="background:#000000"],
+        div[style*="padding: 10px 12px"][style*="background: #000000"] {
+          display: none !important;
+        }
+      `;
+      (document.head || document.documentElement).appendChild(style);
+    }
+  } catch (e) {}
 
   removeDistr();
 
@@ -449,7 +760,7 @@
         break;
       }
     }
-  }).observe(document.body, {
+  }).observe(document.documentElement || document.body, {
     childList: true,
     subtree: true
   });

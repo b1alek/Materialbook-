@@ -2,6 +2,18 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.4.1] - 2026-10-09
+
+### Fixed
+- **In-Feed Video Playback & Muted Start**:
+  - Resolved specific CSS selector conflict where text selection rules forced `user-select: text !important` across media controls. Scoped media controls (`video`, `button.inline-video-icon`, `[data-mcomponent="MVideo"] *`) with `user-select: none !important` and `touch-action: manipulation !important`.
+  - Added programmatic mounting and streaming on play button taps: lazily mounts underlying `<video>` element if absent in mobile SSR container, binds `data-video-url`, and starts playback with muted audio.
+  - Added global play capture listener enforcing `muted = true` by default on all media playback elements.
+  - Fixed full-screen video multi-view (`MMultiView`, 838px) intercepting header taps by elevating top fixed navigation bar and back button containers to `z-index: 99 !important`.
+  - Added on-device End-to-End automated regression test suite (`scripts/test_e2e_video_playback.py`) with visual frame diffing (>40% pixel delta verified).
+
+---
+
 ## [v1.4.0] - 2026-10-08
 
 ### Fixed

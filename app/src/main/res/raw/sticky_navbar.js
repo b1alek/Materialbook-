@@ -55,22 +55,33 @@
     }
 
     const applyStyles = () => {
-        const navbar = document.querySelector('div[data-tti-phase="-1"][data-mcomponent="MContainer"][data-type="container"][data-focusable="true"].m');
         const tabbar = document.querySelector('div[role="tablist"][data-tti-phase="-1"][data-type="container"][data-mcomponent="MContainer"].m');
         const scroller = document.querySelector('div[data-type="vscroller"]');
 
-        const hasLogo = navbar?.querySelector('div[aria-label*="Facebook"]');
-        const hasFeed = tabbar?.querySelector('div[aria-label*="feed"]');
+        const logo = document.querySelector('div[aria-label*="Facebook"]');
+        let navbar = null;
+        if (logo && scroller) {
+            let cur = logo;
+            while (cur && cur.parentElement !== scroller && cur !== document.body) {
+                cur = cur.parentElement;
+            }
+            if (cur && cur.parentElement === scroller) {
+                navbar = cur;
+            }
+        }
 
-        const navbarHeight = navbar ? parseFloat(getComputedStyle(navbar).height) || parseFloat(navbar.style.height) || 0 : 0;
-        const tabbarHeight = tabbar ? parseFloat(getComputedStyle(tabbar).height) || parseFloat(tabbar.style.height) || 0 : 0;
+        const hasLogo = Boolean(navbar && logo);
+        const hasFeed = Boolean(tabbar?.querySelector('div[aria-label*="feed"]'));
+
+        const navbarHeight = (navbar && hasLogo) ? (parseFloat(getComputedStyle(navbar).height) || parseFloat(navbar.style.height) || 0) : 0;
+        const tabbarHeight = tabbar ? (parseFloat(getComputedStyle(tabbar).height) || parseFloat(tabbar.style.height) || 0) : 0;
 
         const isLandscape = window.innerWidth > window.innerHeight;
         const maxHeaderWidth = isLandscape ? '600px' : '100%';
         const headerLeft = isLandscape ? '50%' : '0';
         const headerTransform = isLandscape ? 'translateX(-50%)' : 'none';
 
-        if (hasLogo) Object.assign(navbar.style, {
+        if (navbar && hasLogo) Object.assign(navbar.style, {
             position: 'fixed',
             top: '0',
             left: headerLeft,
@@ -81,9 +92,9 @@
             pointerEvents: 'auto'
         });
 
-        if (hasFeed) Object.assign(tabbar.style, {
+        if (tabbar && hasFeed) Object.assign(tabbar.style, {
             position: 'fixed',
-            top: hasLogo ? navbarHeight + 'px' : '',
+            top: hasLogo ? navbarHeight + 'px' : '0px',
             left: headerLeft,
             transform: headerTransform,
             maxWidth: maxHeaderWidth,

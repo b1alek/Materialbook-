@@ -24,7 +24,7 @@
         // 2. DOM Anchor Tracking
         function findTopmostPost() {
             try {
-                const candidates = document.querySelectorAll('[role="article"], [data-ft], article');
+                const candidates = document.querySelectorAll('[data-tracking-duration-id], [role="article"], [data-ft], article');
                 let bestElement = null;
                 let minTopDistance = Infinity;
 
@@ -74,6 +74,7 @@
 
                 const anchorData = {
                     id: bestElement.id || null,
+                    trackingId: bestElement.getAttribute('data-tracking-duration-id') || null,
                     dataFt: bestElement.getAttribute('data-ft') || null,
                     rectTop: bestElement.getBoundingClientRect().top,
                     scrollY: scrollY,
@@ -135,6 +136,9 @@
                 let element = document.querySelector('[data-materialbook-anchor="true"]');
                 if (!element && data.id) {
                     element = document.getElementById(data.id);
+                }
+                if (!element && data.trackingId) {
+                    element = document.querySelector('[data-tracking-duration-id="' + CSS.escape(data.trackingId) + '"]');
                 }
                 if (!element && data.dataFt) {
                     element = document.querySelector('[data-ft="' + CSS.escape(data.dataFt) + '"]');

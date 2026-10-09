@@ -20,8 +20,8 @@ extensions.configure<ApplicationExtension> {
         applicationId = "com.b1alek.materialbook"
         minSdk = 23
         targetSdk = 36
-        versionCode = 27
-        versionName = "1.4.0"
+        versionCode = 28
+        versionName = "1.4.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
