@@ -2,6 +2,17 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.4.3] - 2026-10-10
+
+### Fixed
+- **Facebook Mobile Comment Text Selection**:
+  - Overrode `user-select: text !important` for readable text inside `role="button"` wrappers (`div[dir="auto"]`, `span[dir="auto"]`, `p`, `.native-text`, `[data-sigil*="comment"]`, `[data-comment-id]`).
+  - Implemented `sanitizeCommentContainers()` to strip `data-long-click-action-id` on comment elements, unblocking native touch long-press text selection and Android `ActionMode`.
+  - Added dynamic node and subtree inspection via `MutationObserver` to sanitize dynamically inserted comment elements.
+  - Preserved non-selectable status (`user-select: none !important`) on leaf comment actions (`like`, `reply`, `reaction`) and media controls (`video`, `audio`, images).
+
+---
+
 ## [v1.4.2] - 2026-10-10
 
 ### Fixed

@@ -22,3 +22,5 @@ keystore*
 tasks/
 *cookies*
 *.db
+tests/__pycache__/
+__pycache__/

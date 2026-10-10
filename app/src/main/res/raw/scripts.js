@@ -343,6 +343,49 @@
       cursor: pointer !important;
     }
 
+    /* Comment text & nested text inside role="button": override leaf none to make text selectable */
+    .ssr #screen-root [role="button"] div[dir="auto"],
+    .ssr #screen-root [role="button"] span[dir="auto"],
+    .ssr #screen-root [role="button"] p,
+    .ssr #screen-root [role="button"] .native-text,
+    .ssr #screen-root [data-sigil*="comment"] div[dir="auto"],
+    .ssr #screen-root [data-sigil*="comment"] span[dir="auto"],
+    .ssr #screen-root [data-comment-id] div[dir="auto"],
+    .ssr #screen-root [data-comment-id] span[dir="auto"],
+    [role="button"] div[dir="auto"],
+    [role="button"] span[dir="auto"],
+    [role="button"] p,
+    [role="button"] .native-text,
+    [data-sigil*="comment"] div[dir="auto"],
+    [data-sigil*="comment"] span[dir="auto"],
+    [data-comment-id] div[dir="auto"],
+    [data-comment-id] span[dir="auto"] {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      pointer-events: auto !important;
+      -webkit-touch-callout: default !important;
+    }
+
+    /* Re-enforce user-select: none on comment leaf action controls (Like, Reply, Reaction buttons) */
+    [data-sigil*="comment"] [role="button"][data-sigil*="reply"],
+    [data-sigil*="comment"] [role="button"][data-sigil*="like"],
+    [data-sigil*="comment"] [role="button"][data-sigil*="reaction"],
+    [data-sigil*="comment"] [role="button"][aria-label*="like" i],
+    [data-sigil*="comment"] [role="button"][aria-label*="reply" i],
+    [data-sigil*="comment"] [role="button"][aria-label*="lubię" i],
+    [data-sigil*="comment"] [role="button"][aria-label*="odpowiedz" i],
+    [data-comment-id] [role="button"][data-sigil*="reply"],
+    [data-comment-id] [role="button"][data-sigil*="like"],
+    [data-comment-id] [role="button"][data-sigil*="reaction"],
+    [data-comment-id] [role="button"][aria-label*="like" i],
+    [data-comment-id] [role="button"][aria-label*="reply" i],
+    [data-comment-id] [role="button"][aria-label*="lubię" i],
+    [data-comment-id] [role="button"][aria-label*="odpowiedz" i] {
+      -webkit-user-select: none !important;
+      user-select: none !important;
+      touch-action: manipulation !important;
+    }
+
     /* Elevate top navigation and header controls above full-screen multi-view overlays */
     .ssr #screen-root .fixed-container:not([style*="height:838px"]):not([style*="height: 838px"]),
     .ssr #screen-root div[role="button"][aria-label*="Back" i],
@@ -404,6 +447,17 @@
     return false;
   };
 
+  // Check if target is a comment action button (Like, Reply, Reaction trigger)
+  const isCommentActionLeaf = (target) => {
+    if (!target || target === document.body) return false;
+    const action = target.closest && target.closest(
+      '[data-sigil*="reply"], [data-sigil*="like"], [data-sigil*="reaction"], ' +
+      '[aria-label*="reply" i], [aria-label*="odpowiedz" i], ' +
+      '[aria-label*="reaction" i], [aria-label*="reakcj" i]'
+    );
+    return Boolean(action);
+  };
+
   const isInteractiveLeaf = (target) => {
     if (!target || target === document.body || target === document.documentElement) return false;
 
@@ -412,6 +466,9 @@
 
     // Check target and immediate parent for "See more" pattern
     if (isSeeMoreElement(target) || isSeeMoreElement(target.parentElement)) return true;
+
+    // Comment action triggers (Like, Reply, Reaction) are leaf buttons
+    if (isCommentActionLeaf(target)) return true;
 
     // Native links and buttons
     const linkOrBtn = target.closest('a, button');
@@ -425,10 +482,20 @@
     );
     if (optionsBtn) return true;
 
-    // ARIA buttons (excluding outer post card containers)
+    // ARIA buttons (excluding outer post card containers and readable text nodes in comments/posts)
     const roleBtn = target.closest('[role="button"]');
     if (roleBtn) {
       if (roleBtn.matches('[role="article"], [data-pagelet*="FeedUnit"]')) return false;
+
+      // If the target itself or its closest wrapper is a readable text element, it is selectable text, not a leaf button
+      const isReadableText = target.matches && (
+        target.matches('div[dir="auto"], span[dir="auto"], p, .native-text') ||
+        target.closest('div[dir="auto"], span[dir="auto"], p, .native-text')
+      );
+      if (isReadableText && !isCommentActionLeaf(target)) {
+        return false;
+      }
+
       const rect = roleBtn.getBoundingClientRect();
       // Large cards are container wrappers (>120px tall AND >220px wide), not leaf action buttons
       if (rect.height > 120 && rect.width > 220) return false;
@@ -536,6 +603,39 @@
     return false;
   };
 
+  // Sanitize comment containers by neutralizing WebBloks long-click actions that hijack native selection
+  const sanitizeCommentContainers = (root = document) => {
+    if (!root || !root.querySelectorAll) return;
+    const candidates = Array.from(root.querySelectorAll('[data-long-click-action-id]'));
+    if (root.nodeType === 1 && root.hasAttribute && root.hasAttribute('data-long-click-action-id')) {
+      candidates.unshift(root);
+    }
+    for (let i = 0; i < candidates.length; i++) {
+      const el = candidates[i];
+      // Only target comment elements (indicated by aria-label mentioning comment, or containing comment text)
+      const roleBtn = el.querySelector && el.querySelector('[role="button"][aria-label*="comment" i], [role="button"][aria-label*="komentarz" i]');
+      if (roleBtn || (el.getAttribute && el.getAttribute('aria-label') && /comment|komentarz/i.test(el.getAttribute('aria-label')))) {
+        el.removeAttribute('data-long-click-action-id');
+      }
+    }
+  };
+  sanitizeCommentContainers();
+
+  if (window.MutationObserver) {
+    const commentObs = new MutationObserver((mutations) => {
+      for (let i = 0; i < mutations.length; i++) {
+        const m = mutations[i];
+        if (m.addedNodes) {
+          for (let j = 0; j < m.addedNodes.length; j++) {
+            const n = m.addedNodes[j];
+            if (n.nodeType === 1) sanitizeCommentContainers(n);
+          }
+        }
+      }
+    });
+    commentObs.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  }
+
   // 1. Long-press text selection: unblock contextmenu and ensure text selection triggers Android ActionMode
   window.addEventListener('contextmenu', (e) => {
     const target = e.target;
@@ -552,6 +652,7 @@
     const isTextContainer = target.closest(
       'div[dir="auto"], span[dir="auto"], p, article, [role="article"], ' +
       '.native-text, .story_body_container, [data-ad-preview="message"], ' +
+      '[data-sigil*="comment"], [data-comment-id], ' +
       'div.m, span.f4, span.f5, div[data-mcomponent="MText"], div[data-mcomponent="ServerTextArea"]'
     ) || (target.textContent && target.textContent.trim().length > 0);
 
