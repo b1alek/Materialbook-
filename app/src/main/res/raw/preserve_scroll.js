@@ -137,11 +137,19 @@
                 if (!element && data.id) {
                     element = document.getElementById(data.id);
                 }
+                function safeCssEscape(str) {
+                    if (!str) return '';
+                    if (typeof window.CSS !== 'undefined' && typeof window.CSS.escape === 'function') {
+                        return window.CSS.escape(str);
+                    }
+                    return str.replace(/([!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+                }
+
                 if (!element && data.trackingId) {
-                    element = document.querySelector('[data-tracking-duration-id="' + CSS.escape(data.trackingId) + '"]');
+                    element = document.querySelector('[data-tracking-duration-id="' + safeCssEscape(data.trackingId) + '"]');
                 }
                 if (!element && data.dataFt) {
-                    element = document.querySelector('[data-ft="' + CSS.escape(data.dataFt) + '"]');
+                    element = document.querySelector('[data-ft="' + safeCssEscape(data.dataFt) + '"]');
                 }
 
                 if (element) {

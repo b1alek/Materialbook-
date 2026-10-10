@@ -157,6 +157,10 @@
 
 // Enable native long-press text selection & restore "See more" expansion
 (() => {
+  if (document.getElementById('materialbook-text-selection-v6')) {
+    return;
+  }
+
   // Strip .unselectable class dynamically added by Facebook (Keep .ssr intact so Facebook's CSS layout and image sizing work!)
   const stripBlockingClasses = () => {
     if (document.documentElement) {
@@ -166,30 +170,41 @@
     }
   };
   stripBlockingClasses();
+
+  if (window.__materialbook_root_observer) {
+    try { window.__materialbook_root_observer.disconnect(); } catch (e) {}
+  }
   if (document.documentElement && window.MutationObserver) {
-    const rootObs = new MutationObserver(() => stripBlockingClasses());
-    rootObs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    window.__materialbook_root_observer = new MutationObserver(() => stripBlockingClasses());
+    window.__materialbook_root_observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   }
 
   const selectionStyle = document.createElement('style');
   selectionStyle.id = 'materialbook-text-selection-v6';
   selectionStyle.textContent = `
-    /* Guarantee core image layout even if .ssr class is momentarily absent */
-    .img {
+    /* Core image layout strictly scoped to ServerImageArea and MVideo */
+    .ssr #screen-root div[data-mcomponent="ServerImageArea"] img.img,
+    .ssr #screen-root div[data-mcomponent="MVideo"] img.img,
+    div[data-mcomponent="ServerImageArea"] img.img,
+    div[data-mcomponent="MVideo"] img.img {
       position: absolute !important;
       width: 100% !important;
       height: 100% !important;
     }
-    .contain {
+    .ssr #screen-root div[data-mcomponent="ServerImageArea"] .contain,
+    div[data-mcomponent="ServerImageArea"] .contain {
       object-fit: contain !important;
     }
-    .cover {
+    .ssr #screen-root div[data-mcomponent="ServerImageArea"] .cover,
+    div[data-mcomponent="ServerImageArea"] .cover {
       object-fit: cover !important;
     }
-    .stretch {
+    .ssr #screen-root div[data-mcomponent="ServerImageArea"] .stretch,
+    div[data-mcomponent="ServerImageArea"] .stretch {
       object-fit: fill !important;
     }
-    .m {
+    .ssr #screen-root div[data-mcomponent="MVideo"] .m,
+    div[data-mcomponent="MVideo"] .m {
       position: relative;
     }
 
@@ -237,15 +252,19 @@
       -webkit-touch-callout: default !important;
     }
 
-    /* Keep decorative post background images from stealing touch events */
+    /* Keep decorative post background images from stealing touch events, but preserve photo tap-to-open links */
     div[data-mcomponent="ServerTextArea"] {
       position: relative !important;
       z-index: 10 !important;
     }
 
-    div[data-mcomponent="ServerImageArea"],
-    div[data-mcomponent="ServerImageArea"] * {
+    div[data-mcomponent="ServerImageArea"] > img:not([role="presentation"]),
+    div[data-mcomponent="ServerImageArea"] > div:not(a) {
       pointer-events: none !important;
+    }
+    div[data-mcomponent="ServerImageArea"] a,
+    div[data-mcomponent="ServerImageArea"] a * {
+      pointer-events: auto !important;
     }
 
     /* Media elements, videos, reels, and player overlays: non-selectable, instant tap response */

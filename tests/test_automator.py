@@ -51,9 +51,16 @@ def test_standardized_artifact_naming() -> None:
 
 
 def test_app_version_parsing() -> None:
-    """Verify that app version is extracted from build.gradle.kts."""
+    """Verify that app version is extracted dynamically from build.gradle.kts."""
+    import re
     ver = two_stage_installer.get_app_version()
-    assert ver == "1.4.0"
+    # Ensure version matches semver format (e.g. 1.4.1)
+    assert re.match(r"^\d+\.\d+\.\d+$", ver), f"Extracted version '{ver}' is not valid semver"
+    gradle_file = settings.repo_root / "Materialbook" / "app" / "build.gradle.kts"
+    if gradle_file.exists():
+        match = re.search(r'versionName\s*=\s*"([^"]+)"', gradle_file.read_text(encoding="utf-8"))
+        if match:
+            assert ver == match.group(1)
 
 
 def test_host_script_generation(tmp_path: Path) -> None:

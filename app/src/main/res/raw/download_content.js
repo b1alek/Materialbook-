@@ -82,21 +82,23 @@
   // Extract true media URL (reads data-video-url or currentSrc if video src is local page)
   const getMediaUrl = (element) => {
     if (!element) return null;
+    const isInvalid = (url) => !url || url.startsWith('blob:') || url === window.location.href;
+
     if (element.tagName === 'VIDEO') {
       const container = element.closest('[data-mcomponent="MVideo"], [data-video-url], [data-sigil*="video"]');
       const dataUrl = container ? (container.getAttribute('data-video-url') || (container.dataset && container.dataset.videoUrl)) : null;
-      if (dataUrl && (dataUrl.includes('fbcdn.net') || dataUrl.includes('.mp4') || dataUrl.startsWith('http'))) {
+      if (dataUrl && !isInvalid(dataUrl) && (dataUrl.includes('fbcdn.net') || dataUrl.includes('.mp4') || dataUrl.startsWith('http'))) {
         return dataUrl;
       }
-      if (element.src && !element.src.includes('blob:') && element.src !== window.location.href) {
+      if (element.src && !isInvalid(element.src)) {
         return element.src;
       }
-      if (element.currentSrc && !element.currentSrc.includes('blob:') && element.currentSrc !== window.location.href) {
+      if (element.currentSrc && !isInvalid(element.currentSrc)) {
         return element.currentSrc;
       }
-      return dataUrl || element.src;
+      return !isInvalid(dataUrl) ? dataUrl : null;
     }
-    return element.src;
+    return !isInvalid(element.src) ? element.src : null;
   };
 
   // Find the appropriate container for the content
