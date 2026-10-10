@@ -2,6 +2,24 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.4.2] - 2026-10-10
+
+### Fixed
+- **Video Play Button Lifecycle & Pause/Ended State**:
+  - Elevated `.inline-video-icon.play` z-index to `10` with high specificity.
+  - Added document capture listeners for `pause` and `ended` events to restore the play button and video poster image when playback stops.
+- **Mobile Video Download Button & Stream Extraction**:
+  - Fixed subpixel height bounding box calculation in `isElementVisible` that previously hid the floating download button on high-density viewports.
+  - Added support for mobile video containers (`[data-mcomponent="MVideo"]`, `[data-video-url]`, `[data-mcomponent="MMultiView"]`).
+  - Added stream URL fallback extraction reading `data-video-url` when `element.src` contains the page URL.
+- **Userscript Hardening & Stability**:
+  - Added idempotency guards in `scripts.js` to eliminate duplicate stylesheet tags and unhandled `MutationObserver` instances on navigation.
+  - Scoped image rules strictly to `ServerImageArea` and `MVideo` while preserving tap-to-open photo lightbox links (`pointer-events: auto !important`).
+  - Guarded against `blob:` URLs in `download_content.js:getMediaUrl`.
+  - Added `safeCssEscape` regex fallback helper in `preserve_scroll.js` for older WebViews lacking `window.CSS.escape`.
+
+---
+
 ## [v1.4.1] - 2026-10-09
 
 ### Fixed
