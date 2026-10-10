@@ -25,6 +25,10 @@
       'div.x1ey2m1c.x9f619.xds687c.x17qophe.x10l6tqk.x13vifvy[role="presentation"] img[src*="fbcdn"]',
       'div[data-pagelet="Story"] video',
       'div[aria-label*="reel"] video',
+      'div[data-mcomponent="MVideo"] video:not([hidden])',
+      'div[data-video-url] video:not([hidden])',
+      'video[src*="mp4"]:not([hidden])',
+      'video:not([hidden])',
       'div[data-pagelet="ProfilePhoto"] img[src*="fbcdn"]'
     ],
     containers: [
@@ -36,7 +40,10 @@
       'div.x1ey2m1c.x9f619.xds687c.x17qophe.x10l6tqk.x13vifvy[role="presentation"]',
       'div[data-pagelet="ProfilePhoto"]',
       'div[aria-label*="photo"]',
-      'div[data-pagelet*="ProfileAppSection"]'
+      'div[data-pagelet*="ProfileAppSection"]',
+      'div[data-mcomponent="MVideo"]',
+      'div[data-video-url]',
+      'div[data-mcomponent="MMultiView"]'
     ],
     storyIndicators: [
       'div[data-sigil="story-viewer"]',
@@ -48,7 +55,9 @@
       'div[aria-label*="highlight"]',
       'div[aria-label*="Highlight"]',
       'div.x1ey2m1c.x9f619.xds687c.x17qophe.x10l6tqk.x13vifvy[role="presentation"]',
-      'div[data-pagelet="ProfilePhoto"]'
+      'div[data-pagelet="ProfilePhoto"]',
+      'div[data-mcomponent="MVideo"]',
+      'div[data-video-url]'
     ]
   };
 
@@ -56,14 +65,39 @@
   const debugLog = (...args) => CONFIG.debug && console.log("[ContentDownloader]", ...args);
 
   const isElementVisible = (element) => {
+    if (!element) return false;
     const rect = element.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    const vw = window.innerWidth || document.documentElement.clientWidth;
     return (
-      rect.top >= 0 &&
-      rect.left >= 0 &&
-      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+      rect.bottom > 0 &&
+      rect.top < vh &&
+      rect.right > 0 &&
+      rect.left < vw &&
+      rect.width > 0 &&
+      rect.height > 0
     );
   };
 
+  // Extract true media URL (reads data-video-url or currentSrc if video src is local page)
+  const getMediaUrl = (element) => {
+    if (!element) return null;
+    if (element.tagName === 'VIDEO') {
+      const container = element.closest('[data-mcomponent="MVideo"], [data-video-url], [data-sigil*="video"]');
+      const dataUrl = container ? (container.getAttribute('data-video-url') || (container.dataset && container.dataset.videoUrl)) : null;
+      if (dataUrl && (dataUrl.includes('fbcdn.net') || dataUrl.includes('.mp4') || dataUrl.startsWith('http'))) {
+        return dataUrl;
+      }
+      if (element.src && !element.src.includes('blob:') && element.src !== window.location.href) {
+        return element.src;
+      }
+      if (element.currentSrc && !element.currentSrc.includes('blob:') && element.currentSrc !== window.location.href) {
+        return element.currentSrc;
+      }
+      return dataUrl || element.src;
+    }
+    return element.src;
+  };
 
   // Find the appropriate container for the content
   const findContentContainer = (element) => {
@@ -83,9 +117,9 @@
     for (const selector of SELECTORS.mediaElements) {
       const elements = document.querySelectorAll(selector);
 
-      // Find the first visible element
+      // Find the first visible element with valid media URL
       for (const element of elements) {
-        if (isElementVisible(element) && element.src) {
+        if (isElementVisible(element) && getMediaUrl(element)) {
           return element;
         }
       }
@@ -96,7 +130,7 @@
       document.querySelectorAll('video:not([hidden]), img[src*="fbcdn"]:not([width="16"]):not([hidden])')
     ).find(el => {
       const rect = el.getBoundingClientRect();
-      return isElementVisible(el) && rect.width > 150 && rect.height > 150 && el.src;
+      return isElementVisible(el) && rect.width > 120 && rect.height > 120 && getMediaUrl(el);
     });
   };
 
@@ -153,10 +187,11 @@
   const extractAndDownloadMedia = () => {
     // Find current media element
     const mediaElement = getCurrentMediaElement();
+    const mediaUrl = getMediaUrl(mediaElement);
 
-    if (mediaElement && mediaElement.src && mediaElement.src !== lastDownloadedUrl) {
-      downloadMedia(mediaElement.src);
-      lastDownloadedUrl = mediaElement.src;
+    if (mediaElement && mediaUrl && mediaUrl !== lastDownloadedUrl) {
+      downloadMedia(mediaUrl);
+      lastDownloadedUrl = mediaUrl;
       return;
     }
 
@@ -165,9 +200,10 @@
 
     // Find videos first
     const videoElement = container.querySelector("video:not([hidden])");
-    if (videoElement && videoElement.src && videoElement.src !== lastDownloadedUrl) {
-      downloadMedia(videoElement.src);
-      lastDownloadedUrl = videoElement.src;
+    const videoUrl = getMediaUrl(videoElement);
+    if (videoElement && videoUrl && videoUrl !== lastDownloadedUrl) {
+      downloadMedia(videoUrl);
+      lastDownloadedUrl = videoUrl;
       return;
     }
 
@@ -226,7 +262,7 @@
     const css = `
       #${DOWNLOAD_BTN_ID} {
         position: fixed;
-        top: 70px;
+        top: 120px;
         right: 15px;
         width: 40px;
         height: 40px;
