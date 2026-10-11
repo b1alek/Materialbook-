@@ -16,6 +16,9 @@
     <a href="https://github.com/ImranR98/Obtainium">
         <img src="https://img.shields.io/badge/Get_Obtainium-0969DA?style=for-the-badge&logo=googleplay&logoColor=white" alt="Get Obtainium App" height="36"/>
     </a>
+    <a href="https://www.gnu.org/licenses/gpl-3.0">
+        <img src="https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge" alt="License: GPL v3" height="36"/>
+    </a>
 </p>
 
 ### 📥 Install & Auto-Update with Obtainium
@@ -93,3 +96,9 @@ If enabled, the app:
 *  **[@eepiemi](https://github.com/eepiemi)** — Original creator and maintainer of [Materialbook](https://github.com/eepiemi/Materialbook). Huge kudos and appreciation for designing and building this fantastic open-source Material You Facebook client!
 *  **[@freedevgraph](https://github.com/freedevgraph)** — Author of [PR #43](https://github.com/eepiemi/Materialbook/pull/43) for the Desktop Messages mode.
 *  **[@KevinnZou/compose-webview-multiplatform](https://github.com/KevinnZou/compose-webview-multiplatform)** — The WebView multiplatform library used in this project.
+
+## License
+
+**Materialbook** is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. See [LICENSE](LICENSE) for the full license text.
+
+This fork is based on [eepiemi/Materialbook](https://github.com/eepiemi/Materialbook) with modifications (scoped Reels download buttons, autoplay handling, userscript test coverage).

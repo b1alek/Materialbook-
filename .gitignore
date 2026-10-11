@@ -24,3 +24,13 @@ tasks/
 *.db
 tests/__pycache__/
 __pycache__/
+
+# Local agent/tooling config (may contain secrets)
+opencode.jsonc*
+opencode.jsonc.bak.*
+
+# Local-only: device-bound integration tests, working notes, agent instructions.
+# Backed up separately (see lesson_learned.md §15); never commit to the public repo.
+tests/
+lesson_learned.md
+AGENTS.md

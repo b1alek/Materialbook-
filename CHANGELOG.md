@@ -2,6 +2,24 @@
 
 All notable changes to this fork (`b1alek/Materialbook-`) will be documented in this file.
 
+## [v1.4.4] - 2026-10-11
+
+### Fixed
+- **Scoped Reels Download Buttons**:
+  - Each `.vertically-snappable` reel card gets its own download button that scrolls with the card; global fixed button auto-hides on Reels.
+  - Most-visible-card gating: exactly one button shown, off-screen buttons hidden via scroll listener.
+  - Fixed stuck-button case where the pull-to-refresh container (`position: fixed`) anchored a button to the viewport.
+  - Fixed global button reappearing on repeat runs (scoped-button presence, not attach-count, drives visibility).
+- **Reels Autoplay**:
+  - New cards arrive with sourceless `<video>` (FB activation never fires in WebView); fallback assigns the card's `data-video-url` before `play()`.
+  - Pause previous reel on advance; resume current reel on foreground return (covers `silenceMedia` pauses).
+- **Pause/Unmute Overlap**:
+  - Moved reel download button clear of Facebook's sound control (measured gap) with explicit `pointer-events: auto`.
+  - Tap handler no longer hides Facebook's native play button/poster.
+  - Autoplay honors explicit user pauses (trusted-gesture tracking, card-change clears).
+- **Tests**: 11 Reels download + 5 userscript CDP integration tests (gating, autoplay, tap-pause, hide-reels toggle, `isFeed` contract, copy button).
+- **License**: adopted GPLv3 to match upstream (`eepiemi/Materialbook` commit `f7cd9e5`); added README License section.
+
 ## [v1.4.3] - 2026-10-10
 
 ### Fixed

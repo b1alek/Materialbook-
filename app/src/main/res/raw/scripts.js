@@ -712,8 +712,8 @@
           const posterImg = targetMVideo.querySelector('img.img');
           if (targetVideo.paused) {
             targetVideo.play();
-            if (playBtn) playBtn.style.display = 'none';
-            if (posterImg) posterImg.style.display = 'none';
+            // Never hide FB's native play button/poster here: Facebook owns
+            // their visibility and forced display:none fights its overlay swap.
           } else {
             targetVideo.pause();
             if (playBtn) playBtn.style.display = 'block';
@@ -748,11 +748,8 @@
         e.target.defaultMuted = true;
         e.target.setAttribute('muted', '');
       }
-      const container = e.target.closest('[data-mcomponent="MVideo"], [data-video-url]');
-      if (container) {
-        const pBtn = container.querySelector('button.inline-video-icon.play, [data-sigil*="play"]');
-        if (pBtn) pBtn.style.display = 'none';
-      }
+      // Never force-hide FB's native play control on play: Facebook owns its
+      // overlay visibility; display:none here fights its play/pause swap.
     }
   }, true);
 
